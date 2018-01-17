@@ -31,7 +31,7 @@ func TestDescMigration(t *testing.T) {
     }
 
     for _, tc := range tt {
-        dialect, ts, err := DescMigration(tc.name)
+        dialect, ts, err := FileDialectAndTs(tc.name)
         if tc.err {
             assert.Error(t, err)
         } else {

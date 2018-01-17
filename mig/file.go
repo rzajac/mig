@@ -20,7 +20,7 @@ func FileFromPath(path string) (*File, error) {
     if err != nil {
         return nil, err
     }
-    dialect, tss, err := DescMigration(path)
+    dialect, tss, err := FileDialectAndTs(path)
     if err != nil {
         return nil, err
     }

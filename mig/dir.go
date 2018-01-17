@@ -8,13 +8,12 @@ import (
     "path"
 )
 
-// A Dir represents migrations directory.
+// A Dir represents directory where migrations are stored.
 type Dir struct {
-    path string // Absolute path to migrations directory.
+    path string // Absolute path to the directory.
 }
 
-// NewDir creates new instance and ensures it is a directory.
-// I will create directory if it does not exist.
+// NewDir creates new instance of the Dir.
 func NewDir(dir string) (*Dir, error) {
     var err error
     d := &Dir{}
@@ -25,6 +24,7 @@ func NewDir(dir string) (*Dir, error) {
     return d, nil
 }
 
+// Initialize initialize migrations directory for given dialect.
 func (d *Dir) Initialize(dialect string) error {
     fmt.Printf("initializing migrations in %s\n", d.path)
     ex, err := d.Exists()
@@ -40,7 +40,7 @@ func (d *Dir) Initialize(dialect string) error {
             return fmt.Errorf("cannot initialize in non empty directory %s", d.path)
         }
     }
-    if err = DirCreate(d.path); err != nil {
+    if err = CreateDir(d.path); err != nil {
         return err
     }
     switch dialect {
@@ -48,11 +48,12 @@ func (d *Dir) Initialize(dialect string) error {
         fn := path.Join(d.path, GenMigMainFileName(dialect))
         return ioutil.WriteFile(fn, []byte(migTplMainMysql), 0666)
     default:
-        panic("unknown dialect " + dialect)
+        return fmt.Errorf("unknown dialect %s", dialect)
     }
     return nil
 }
 
+// NewMigration creates new migration file for given dialect.
 func (d *Dir) NewMigration(dialect string) error {
     fmt.Printf("creating migration file for %s in %s\n", dialect, d.path)
     ex, err := d.Exists()
@@ -66,10 +67,16 @@ func (d *Dir) NewMigration(dialect string) error {
     case "mysql":
         ts, fn := GenMigFileName(dialect)
         fn = path.Join(d.path, fn)
-        data := fmt.Sprintf(migTplMigTpl, ts, ts)
-        return ioutil.WriteFile(fn, []byte(data), 0666)
+        ex, err := FileExists(fn)
+        if err != nil {
+            return err
+        }
+        if ex {
+            return fmt.Errorf("migration file %s already exists\n", fn)
+        }
+        return ioutil.WriteFile(fn, []byte(fmt.Sprintf(migTplMigTpl, ts, ts)), 0666)
     default:
-        panic("unknown dialect " + dialect)
+        return fmt.Errorf("unknown dialect %s\n", dialect)
     }
     return nil
 }
@@ -79,7 +86,7 @@ func (d *Dir) Exists() (bool, error) {
 }
 
 func (d *Dir) Create() error {
-    return DirCreate(d.path)
+    return CreateDir(d.path)
 }
 
 func (d *Dir) MigCount() (int, error) {
