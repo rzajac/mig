@@ -21,6 +21,20 @@ func main() {
 
     app.Commands = []cli.Command{
         {
+            Name:        "init",
+            Usage:       "Initialize migrations.",
+            ArgsUsage:   "[dir]",
+            Description: "Initializes migrations directory for database dialect.",
+            Action:      InitMigrations,
+            Flags: []cli.Flag{
+                cli.StringFlag{
+                    Name:  "dialect, d",
+                    Usage: "database dialect",
+                    Value: "mysql",
+                },
+            },
+        },
+        {
             Name:        "new",
             Usage:       "Add new migration",
             Description: "adds new migration file",
@@ -35,6 +49,15 @@ func main() {
     }
 
     app.Run(os.Args)
+}
+
+func InitMigrations(ctx *cli.Context) error {
+    dir := ctx.Args().First()
+    if dir == "" {
+        dir = "migration"
+    }
+    fmt.Println(dir)
+    return nil
 }
 
 func NewMigration(ctx *cli.Context) error {

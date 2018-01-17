@@ -2,8 +2,6 @@ package mig
 
 import (
     "fmt"
-    "os"
-    "path"
     "time"
 )
 
@@ -16,14 +14,10 @@ type File struct {
 // The dir must be a path to migrations directory.
 // If directory does not exist it will create new one.
 func NewMigrationFile(dir string) (*File, error) {
-    if dir == "" {
-        dir = "migration"
-    }
-    wd, err := os.Getwd()
+    dir, err := toAbs(dir)
     if err != nil {
         return nil, err
     }
-    dir = path.Join(wd, dir)
     if err := ensureDir(dir); err != nil {
         return nil, err
     }
@@ -36,7 +30,6 @@ func (m *File) Create() error {
     if err != nil {
         return err
     }
-
     ts := time.Now().UnixNano()
     fmt.Printf("%d\n", ts)
     return nil

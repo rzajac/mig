@@ -3,6 +3,7 @@ package mig
 import (
     "io/ioutil"
     "os"
+    "path"
 
     "github.com/pkg/errors"
 )
@@ -33,4 +34,13 @@ func migCount(path string) (int, error) {
         return 0, err
     }
     return len(fs), nil
+}
+
+// toAbs returns absolute path to directory dir.
+func toAbs(dir string) (string, error) {
+    wd, err := os.Getwd()
+    if err != nil {
+        return "", err
+    }
+    return path.Join(wd, dir), nil
 }
