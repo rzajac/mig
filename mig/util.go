@@ -1,46 +1,85 @@
 package mig
 
 import (
-    "io/ioutil"
-    "os"
+    "regexp"
+    "errors"
     "path"
-
-    "github.com/pkg/errors"
+    "os"
+    "fmt"
+    "time"
 )
 
-// ensureDir ensures path is a directory.
-// If it does not exist it will create one.
-func ensureDir(path string) error {
-    fi, err := os.Stat(path)
-    if os.IsNotExist(err) {
-        return os.Mkdir(path, 0777)
+var migName = regexp.MustCompile(`^mig_([a-z]+)_([0-9]{19})\.go$`)
+
+// IsMigration is file a migration file.
+func IsMigration(name string) bool {
+    p := migName.FindAllStringSubmatch(name, 3)
+    return len(p) > 0
+}
+
+// DescMigration takes migration file name and returns dialect
+// and creation timestamp.
+func DescMigration(name string) (string, string, error) {
+    p := migName.FindAllStringSubmatch(path.Base(name), 3)
+    if len(p) == 0 {
+        return "", "", errors.New("not a migration file")
     }
+    return p[0][1], p[0][2], nil
+}
+
+// DirCreate creates directory if it does not exist.
+func DirCreate(path string) error {
+    fi, err := exists(path)
     if err != nil {
         return err
     }
-    switch mode := fi.Mode(); {
-    case mode.IsDir():
-        return nil
-    default:
-        return errors.New(path + " not a directory")
+    if fi == nil {
+        return os.MkdirAll(path, 0777)
+    }
+    if !fi.IsDir() {
+        return fmt.Errorf("%s already exists and it's not a directory", path)
     }
     return nil
 }
 
-// migCount returns number of files in the directory.
-func migCount(path string) (int, error) {
-    fs, err := ioutil.ReadDir(path)
+// FileExists returns true if path points to an existing file.
+func FileExists(path string) (bool, error) {
+    fi, err := exists(path)
     if err != nil {
-        return 0, err
+        return false, err
     }
-    return len(fs), nil
+    if fi != nil {
+        return !fi.IsDir(), nil
+    }
+    return false, nil
 }
 
-// toAbs returns absolute path to directory dir.
-func toAbs(dir string) (string, error) {
-    wd, err := os.Getwd()
+// DirExists returns true if path points to an existing directory.
+func DirExists(path string) (bool, error) {
+    fi, err := exists(path)
     if err != nil {
-        return "", err
+        return false, err
     }
-    return path.Join(wd, dir), nil
+    if fi != nil {
+        return fi.IsDir(), nil
+    }
+    return false, nil
+}
+
+func GenMigMainFileName(dialect string) string {
+    return fmt.Sprintf("mig_%s.go", dialect)
+}
+
+func GenMigFileName(dialect string) (int64, string) {
+    ts := time.Now().UnixNano()
+    return ts, fmt.Sprintf("mig_%s_%d.go", dialect, ts)
+}
+
+// exists returns os.FileInfo if file or directory exists.
+func exists(path string) (os.FileInfo, error) {
+    fi, err := os.Stat(path)
+    if os.IsNotExist(err) {
+        return nil, nil
+    }
+    return fi, err
 }

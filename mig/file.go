@@ -1,36 +1,39 @@
 package mig
 
 import (
-    "fmt"
     "time"
+    "path/filepath"
+    "strconv"
 )
 
 // A File represents migration file.
 type File struct {
-    dir string
+    dir     *Dir      // Directory file is located in.
+    path    string    // Absolute path.
+    dialect string    // Migration dialect.
+    ts      time.Time // Creation time.
 }
 
-// NewMigrationFile returns new instance and prepares migrations directory.
-// The dir must be a path to migrations directory.
-// If directory does not exist it will create new one.
-func NewMigrationFile(dir string) (*File, error) {
-    dir, err := toAbs(dir)
+// FileFromPath creates File instance from path.
+func FileFromPath(path string) (*File, error) {
+    path, err := filepath.Abs(path)
     if err != nil {
         return nil, err
     }
-    if err := ensureDir(dir); err != nil {
+    dialect, tss, err := DescMigration(path)
+    if err != nil {
         return nil, err
     }
-    return &File{dir}, nil
-}
-
-// Create creates new migration file.
-func (m *File) Create() error {
-    _, err := migCount(m.dir)
+    tsi, _ := strconv.ParseInt(tss, 10, 64)
+    dir, err := NewDir(filepath.Dir(path))
     if err != nil {
-        return err
+        return nil, err
     }
-    ts := time.Now().UnixNano()
-    fmt.Printf("%d\n", ts)
-    return nil
+    f := &File{
+        dir:     dir,
+        path:    path,
+        dialect: dialect,
+        ts:      time.Unix(0, tsi),
+    }
+    return f, nil
 }

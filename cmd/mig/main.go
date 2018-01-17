@@ -1,12 +1,12 @@
 package main
 
 import (
-    "fmt"
     "os"
 
     "github.com/codegangsta/cli"
-    "github.com/rzajac/mig/cmd/mig/migration"
     "github.com/rzajac/mig/mig"
+    "fmt"
+    "github.com/pkg/errors"
 )
 
 func main() {
@@ -23,53 +23,60 @@ func main() {
         {
             Name:        "init",
             Usage:       "Initialize migrations.",
-            ArgsUsage:   "[dir]",
-            Description: "Initializes migrations directory for database dialect.",
+            ArgsUsage:   "dialect dir",
+            Description: "Initializes migrations directory for given dialect.",
             Action:      InitMigrations,
-            Flags: []cli.Flag{
-                cli.StringFlag{
-                    Name:  "dialect, d",
-                    Usage: "database dialect",
-                    Value: "mysql",
-                },
-            },
         },
         {
             Name:        "new",
             Usage:       "Add new migration",
-            Description: "adds new migration file",
+            ArgsUsage:   "dialect dir",
+            Description: "adds new migration file for given dialect",
             Action:      NewMigration,
-            Flags: []cli.Flag{
-                cli.StringFlag{
-                    Name:  "dir, d",
-                    Usage: "migrations directory",
-                },
-            },
         },
     }
 
-    app.Run(os.Args)
+    if err := app.Run(os.Args); err != nil {
+        fmt.Printf("%v\n", err)
+        os.Exit(1)
+    }
+}
+
+func getMig(ctx *cli.Context) (*mig.Mig, error) {
+    dialect := ctx.Args().First()
+    dir := ctx.Args().Get(1)
+    if err := heckDialectDir(dialect, dir); err != nil {
+        return nil, err
+    }
+    m, err := mig.NewMig(dir, dialect)
+    if err != nil {
+        return nil, err
+    }
+    return m, nil
+}
+
+func heckDialectDir(dialect, dir string) error {
+    if dialect == "" {
+        return errors.New("dialect must be provided")
+    }
+    if dir == "" {
+        return errors.New("directory must be provided")
+    }
+    return nil
 }
 
 func InitMigrations(ctx *cli.Context) error {
-    dir := ctx.Args().First()
-    if dir == "" {
-        dir = "migration"
+    m, err := getMig(ctx)
+    if err != nil {
+        return err
     }
-    fmt.Println(dir)
-    return nil
+    return m.Initialize()
 }
 
 func NewMigration(ctx *cli.Context) error {
-    m, err := mig.NewMigrationFile(ctx.String("dir"))
+    m, err := getMig(ctx)
     if err != nil {
-        fmt.Printf("%v\n", err)
         return err
     }
-    m.Create()
-
-    ss := &migration.Migration{}
-    ss.Mig1516144287290322398()
-
-    return nil
+    return m.New()
 }
