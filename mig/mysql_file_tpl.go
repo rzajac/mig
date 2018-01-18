@@ -1,18 +1,18 @@
-package dialect
+package mig
 
 import (
-    tpl "text/template"
-    "time"
     "strconv"
+    "text/template"
+    "time"
 )
 
 // Template function map.
-var tplFnMap = tpl.FuncMap{
+var tplFnMap = template.FuncMap{
     "fTime": func(t time.Time) string { return strconv.FormatInt(t.UnixNano(), 10) },
 }
 
-// MySQL dialect file template.
-var MySQLDialectTpl = tpl.Must(tpl.New("mig-mysql-dialect-tpl").Funcs(tplFnMap).Parse(`
+// MySQL struct file template.
+var mySQLStructTpl = template.Must(template.New("mig-mysql-struct-tpl").Funcs(tplFnMap).Parse(`
 package migration
 
 import "database/sql"
@@ -25,7 +25,7 @@ type MigMySQL struct {
 `))
 
 // MySQL migration file template.
-var MySQLMigTpl = tpl.Must(tpl.New("mig-mysql-migration-tpl").Funcs(tplFnMap).Parse(`
+var mySQLMigrationTpl = template.Must(template.New("mig-mysql-migration-tpl").Funcs(tplFnMap).Parse(`
 package migration
 
 import (

@@ -1,4 +1,4 @@
-package dialect
+package mig
 
 // Create MySQL migrations table.
 var mySQLMigTableCreate = `CREATE TABLE IF NOT EXIST migrations (

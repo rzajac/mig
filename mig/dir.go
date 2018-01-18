@@ -1,202 +1,102 @@
 package mig
 
 import (
-    "fmt"
+    "bytes"
     "io/ioutil"
     "os"
     "path/filepath"
+    "text/template"
 )
 
-// A dir represents state of migrations directory
-// and provides file manipulation methods.
+// A dir represents directory where migrations are stored and provides
+// methods which manipulate on it.
 type dir struct {
-    // Absolute path root directory.
-    // The root directory is defined as
-    // the one containing "migration" directory.
-    rootDir string
-    // The path rootDir points to existing directory.
-    rootDirExist bool
-    // The absolute path to migration directory.
-    // migDir is always a subdirectory of rootDir.
+    // The absolute path to directory with migration files.
     migDir string
-    // The path migDir points to existing directory.
-    migDirExist bool
-    // Set to true if migDir is empty.
-    migDirEmpty bool
-    // Set to true if migration directory exists and is
-    // initialized with at least one Dialect.
-    initialized bool
-    // List of initialized dialects.
-    dialects []string
     // The list of migrations.
-    migrations map[string]*File
-    // Set to true when rootDir structure is ready to use by mig.
-    valid bool
-    // The error which stopped the check.
-    err error
+    migrations map[string]*MigFile
 }
 
-// newDir creates new dir instance and collects populates the state of the
-// migration directory.
-func newDir(root string) *dir {
-    s := &dir{
-        migDirEmpty: true,
-        migrations:  make(map[string]*File),
+// newDir returns new dir instance and loads all migrations.
+// If path does not exist it will attempt to create it.
+func newDir(path string) (*dir, error) {
+    d := &dir{}
+    d.migDir = path
+    d.migrations = make(map[string]*MigFile)
+    if err := os.MkdirAll(d.migDir, 0777); err != nil {
+        return nil, err
     }
-    s.rootDir, s.err = filepath.Abs(root)
-    if s.err != nil {
-        return s
-    }
-    s.collect()
-    return s
-}
-
-// ready returns true if migration directory is ready to use by mig.
-func (d *dir) ready() bool {
-    return d.err == nil && d.valid
+    return d, d.loadMigrations()
 }
 
 // init initialize migrations directory for given dialect.
 func (d *dir) init(dialect string) error {
-    if IsSupDialect(dialect) == false {
-        return d.failure(fmt.Errorf("unsupported dialect: %d", dialect))
+    var tpl *template.Template
+    switch dialect {
+    case "mysql":
+        tpl = mySQLStructTpl
     }
-    if d.isInitFor(dialect) == true {
-        return nil
-    }
-    if d.migDirExist == false {
-        if err := d.createMigDir(); err != nil {
-            return d.failure(err)
-        }
-    }
-    file, err := NewMigFile(d.migDir, dialect, kindDial)
-    if err != nil {
+
+    var buf bytes.Buffer
+    if err := tpl.Execute(&buf, nil); err != nil {
         return err
     }
-    return file.Save()
+    path := filepath.Join(d.migDir, StructFileName(dialect))
+    return ioutil.WriteFile(path, buf.Bytes(), 0666)
 }
 
-// newMigration creates new migration file for given dialect.
+// newMigration creates new migration file for given dialect and returns
+// absolute path to it.
 func (d *dir) newMigration(dialect string) (string, error) {
-    if d.isInitFor(dialect) == false {
-        return "", d.failure(fmt.Errorf("migrations not initialized for %s", dialect))
-    }
-
-    if d.ready() == false {
-        return "", d.failure(fmt.Errorf("migrations directory not ready"))
-    }
-
-    if IsSupDialect(dialect) == false {
-        return "", d.failure(fmt.Errorf("unsupported dialect: %d", dialect))
-    }
-
-    file, err := NewMigFile(d.migDir, dialect, kindMigr)
+    ok, err := d.isInitFor(dialect)
     if err != nil {
         return "", err
     }
+    if !ok {
+        if err := d.init(dialect); err != nil {
+            return "", err
+        }
+    }
+
+    file := newMigFile(d.migDir, dialect)
     if err := file.Save(); err != nil {
         return "", err
     }
-    return file.Path, d.collect()
+    d.migrations[file.descriptor()] = file
+
+    return file.Path, nil
 }
 
-// createMigDir creates migration directory in rootDir.
-func (d *dir) createMigDir() error {
-    if err := os.MkdirAll(d.migDir, 0777); err != nil {
-        return d.failure(err)
-    }
-    d.collect()
-    return nil
-}
-
-// collect collects all the information and sets all fields accordingly.
-func (d *dir) collect() error {
+// loadMigrations loads migration files.
+func (d *dir) loadMigrations() error {
     var err error
-    if d.rootDirExist, err = IsDir(d.rootDir); err != nil {
-        return d.failure(err)
-    }
-
-    if d.rootDirExist == false {
-        return d.failure(fmt.Errorf("%d must exist", d.rootDir))
-    }
-
-    // Check migration directory exists in root and it'd actually a directory.
-    var ex bool
-    d.migDir = filepath.Join(d.rootDir, "migration")
-    if ex, err = FileExists(d.migDir); err != nil {
-        return d.failure(err)
-    }
-    if d.migDirExist, err = IsDir(d.migDir); err != nil {
-        return d.failure(err)
-    }
-    if ex && !d.migDirExist {
-        return d.failure(fmt.Errorf("%d is not a directory", d.migDir))
-    }
-
-    if d.migDirExist == false {
-        d.valid = true
-        return nil
-    }
-
     var fs []os.FileInfo
+
     if fs, err = ioutil.ReadDir(d.migDir); err != nil {
-        return d.failure(err)
+        return err
     }
     for _, fi := range fs {
-        switch {
-        case IsDialectFile(fi.Name()):
-            dialect, _ := DecodeDialectFile(fi.Name())
-            if !IsSupDialect(dialect) {
-                return d.failure(fmt.Errorf("unsupported dialect %d in "+
-                    "migration file %d", dialect, fi.Name()))
-            }
-            d.dialects = append(d.dialects, dialect)
-        case IsMigFile(fi.Name()):
-            file, err := NewFileFromPath(fi.Name())
-            if err != nil {
-                return err
-            }
-            d.migrations[file.descriptor()] = file
-        default:
-            return d.failure(fmt.Errorf("unexpected file %d", fi.Name()))
+        if !IsMigFile(fi.Name()) {
+            continue
         }
+        file, err := newFileFromPath(fi.Name())
+        if err != nil {
+            return err
+        }
+        d.migrations[file.descriptor()] = file
     }
-
-    if len(d.dialects) > 0 {
-        d.initialized = true
-    }
-
-    if len(d.migrations) > 0 {
-        d.migDirEmpty = false
-    }
-
-    d.valid = true
     return nil
 }
 
 // isInitFor returns true if migrations have been
 // initialized for given dialect.
-func (d *dir) isInitFor(dialect string) bool {
-    for _, d := range d.dialects {
-        if d == dialect {
-            return true
-        }
-    }
-    return false
+func (d *dir) isInitFor(dialect string) (bool, error) {
+    path := filepath.Join(d.migDir, StructFileName(dialect))
+    return FileExists(path)
 }
 
 // hasMigration checks if migration already exists.
 func (d *dir) hasMigration(id int64, dialect string) bool {
-    _, ok := d.migrations[Desc(id, dialect)]
+    _, ok := d.migrations[MigrationDescriptor(dialect, id)]
     return ok
-}
-
-// failure sets err and makes the directory as invalid.
-func (d *dir) failure(err error) error {
-    if err == nil {
-        return nil
-    }
-    d.err = err
-    d.valid = false
-    return err
 }

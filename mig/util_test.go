@@ -21,21 +21,6 @@ func TestIsMigFile(t *testing.T) {
     }
 }
 
-func TestIsMigStructFile(t *testing.T) {
-    tt := []struct {
-        name string
-        exp  bool
-    }{
-        {"mig_mysql.go", true},
-        {"mig_pg.go", false},
-        {"file.go", false},
-    }
-
-    for _, tc := range tt {
-        assert.Exactly(t, tc.exp, IsDialectFile(tc.name))
-    }
-}
-
 func TestDescMigration(t *testing.T) {
     tt := []struct {
         name    string
@@ -47,7 +32,7 @@ func TestDescMigration(t *testing.T) {
     }
 
     for _, tc := range tt {
-        dialect, ts, err := DecodeMigFile(tc.name)
+        dialect, ts, err := ParseMigFileName(tc.name)
         if tc.err {
             assert.Error(t, err)
         } else {

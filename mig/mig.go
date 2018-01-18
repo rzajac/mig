@@ -2,8 +2,7 @@ package mig
 
 import (
     "fmt"
-    "reflect"
-    "github.com/rzajac/mig/cmd/mig/migration"
+    //"github.com/rzajac/mig/cmd/mig/migration"
 )
 
 // Supported dialects
@@ -16,14 +15,14 @@ type Mig struct {
 }
 
 // NewMig creates new Mig instance.
-func NewMig(root, dialect string) (*Mig, error) {
+func NewMig(migDir, dialect string) (*Mig, error) {
+    var err error
     if IsSupDialect(dialect) == false {
         return nil, fmt.Errorf("unsupported dialect: %s", dialect)
     }
     m := &Mig{dialect: dialect}
-    m.dir = newDir(root)
-    if m.dir.err != nil {
-        return nil, m.dir.err
+    if m.dir, err = newDir(migDir); err != nil {
+        return nil, err
     }
     return m, nil
 }
@@ -39,22 +38,22 @@ func (m *Mig) New() (string, error) {
 }
 
 func (m *Mig) Migrate() error {
-    s := reflect.ValueOf(&migration.MigMySQL{})
-
-    fmt.Println(s.NumMethod())
-    for i := 0; i < s.NumMethod(); i++ {
-        metName := s.Type().Method(i).Name
-        fmt.Println(metName)
-
-        v := s.Method(i).Call([]reflect.Value{})
-        isErr := !v[0].IsNil()
-        fmt.Printf("is error: %v\n", isErr)
-
-        if isErr {
-            err, _ := v[0].Interface().(error)
-            fmt.Printf("%v\n", err)
-        }
-        fmt.Println()
-    }
+    //s := reflect.ValueOf(&migration.MigMySQL{})
+    //
+    //fmt.Println(s.NumMethod())
+    //for i := 0; i < s.NumMethod(); i++ {
+    //    metName := s.Type().Method(i).Name
+    //    fmt.Println(metName)
+    //
+    //    v := s.Method(i).Call([]reflect.Value{})
+    //    isErr := !v[0].IsNil()
+    //    fmt.Printf("is error: %v\n", isErr)
+    //
+    //    if isErr {
+    //        err, _ := v[0].Interface().(error)
+    //        fmt.Printf("%v\n", err)
+    //    }
+    //    fmt.Println()
+    //}
     return nil
 }

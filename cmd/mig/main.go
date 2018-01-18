@@ -1,13 +1,13 @@
 package main
 
 import (
+    "fmt"
     "os"
+    "path/filepath"
 
     "github.com/codegangsta/cli"
-    "github.com/rzajac/mig/mig"
-    "fmt"
     "github.com/pkg/errors"
-    "path/filepath"
+    "github.com/rzajac/mig/mig"
 )
 
 func main() {
@@ -26,14 +26,14 @@ func main() {
             Usage:       "Initialize migrations.",
             ArgsUsage:   "dialect dir",
             Description: "Initializes migrations directory for given dialect.",
-            Action:      InitMigrations,
+            Action:      InitMigrationsCmd,
         },
         {
             Name:        "new",
             Usage:       "Add new migration",
             ArgsUsage:   "dialect dir",
             Description: "adds new migration file for given dialect",
-            Action:      NewMigration,
+            Action:      NewMigrationCmd,
         },
         {
             Name:        "migrate",
@@ -50,10 +50,11 @@ func main() {
     }
 }
 
+// getMig returns Mig instance.
 func getMig(ctx *cli.Context) (*mig.Mig, error) {
     dialect := ctx.Args().First()
     dir := ctx.Args().Get(1)
-    if err := checkArgs(dialect, dir); err != nil {
+    if err := validateArgs(dialect, dir); err != nil {
         return nil, err
     }
     m, err := mig.NewMig(dir, dialect)
@@ -63,9 +64,10 @@ func getMig(ctx *cli.Context) (*mig.Mig, error) {
     return m, nil
 }
 
-func checkArgs(dialect, dir string) error {
-    if dialect == "" {
-        return errors.New("dialect argument must be provided")
+// validateArgs validate command arguments.
+func validateArgs(dialect, dir string) error {
+    if !mig.IsSupDialect(dialect) {
+        return fmt.Errorf("unsupported dialect: %s", dialect)
     }
     if dir == "" {
         return errors.New("directory argument must be provided")
@@ -73,7 +75,8 @@ func checkArgs(dialect, dir string) error {
     return nil
 }
 
-func InitMigrations(ctx *cli.Context) error {
+// InitMigrationsCmd initialize migration directory for given dialect.
+func InitMigrationsCmd(ctx *cli.Context) error {
     m, err := getMig(ctx)
     if err != nil {
         return err
@@ -81,7 +84,8 @@ func InitMigrations(ctx *cli.Context) error {
     return m.Initialize()
 }
 
-func NewMigration(ctx *cli.Context) error {
+// NewMigrationCmd creates new migration file.
+func NewMigrationCmd(ctx *cli.Context) error {
     m, err := getMig(ctx)
     if err != nil {
         return err

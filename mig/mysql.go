@@ -1,4 +1,4 @@
-package dialect
+package mig
 
 import (
     "database/sql"

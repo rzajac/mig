@@ -1,33 +1,27 @@
 package mig
 
 import (
-    "errors"
     "fmt"
-    "io/ioutil"
     "os"
     "path"
     "regexp"
-    "time"
     "strconv"
+    "time"
 )
 
 // Regexp pattern matching migration file name.
-var migFileName = regexp.MustCompile(`^mig_([a-z]+)_([0-9]{19})\.go$`)
-
-// Regexp pattern matching dialect file.
-// The dialect file defines the struct type for given dialect.
-var dialectFileName = regexp.MustCompile(`^mig_(mysql)\.go$`)
+var migrationFileName = regexp.MustCompile(`^mig_([a-z]+)_([0-9]{19})\.go$`)
 
 // IsMigFile returns true if path is a migration file.
 func IsMigFile(file string) bool {
-    p := migFileName.FindAllStringSubmatch(path.Base(file), 3)
+    p := migrationFileName.FindAllStringSubmatch(path.Base(file), 3)
     return len(p) == 1 && len(p[0]) == 3
 }
 
-// DecodeMigFile decodes dialect and timestamp which are encoded in the
-// migration file name. Returns dialect and migration id.
-func DecodeMigFile(file string) (string, int64, error) {
-    p := migFileName.FindAllStringSubmatch(path.Base(file), 3)
+// ParseMigFileName returns dialect and creation timestamp
+// which are part of migration file name.
+func ParseMigFileName(file string) (string, int64, error) {
+    p := migrationFileName.FindAllStringSubmatch(path.Base(file), 3)
     if len(p) == 0 && len(p[0]) == 3 {
         return "", 0, fmt.Errorf("%s is not a migration file", file)
     }
@@ -36,22 +30,6 @@ func DecodeMigFile(file string) (string, int64, error) {
         return "", 0, err
     }
     return p[0][1], id, nil
-}
-
-// IsDialectFile returns true if path is a dialect file.
-func IsDialectFile(file string) bool {
-    p := dialectFileName.FindAllStringSubmatch(path.Base(file), 2)
-    return len(p) == 1 && len(p[0]) == 2
-}
-
-// DecodeDialectFile decodes dialect which is encoded in the
-// migration dialect file name.
-func DecodeDialectFile(file string) (string, error) {
-    p := dialectFileName.FindAllStringSubmatch(path.Base(file), 2)
-    if len(p) == 0 && len(p[0]) == 2 {
-        return "", errors.New("not a migration struct file")
-    }
-    return p[0][1], nil
 }
 
 // FileExists returns true if path points to an existing file.
@@ -90,35 +68,21 @@ func IsSupDialect(dialect string) bool {
     return false
 }
 
-// IsValidKind returns true if the migration file kind is valid.
-func IsValidKind(kind string) bool {
-    return kind == kindDial || kind == kindMigr
-}
-
-// FileCount returns number of files in a given directory.
-func FileCount(path string) (int, error) {
-    fs, err := ioutil.ReadDir(path)
-    if err != nil {
-        return 0, err
-    }
-    return len(fs), nil
-}
-
-// GenDialectFileName generates dialect migration file name.
-// Returned file name matches dialectFileName regexp.
-func GenDialectFileName(dialect string) string {
+// StructFileName returns struct file name for given dialect.
+// Returned file name matches structFileName regexp.
+func StructFileName(dialect string) string {
     return fmt.Sprintf("mig_%s.go", dialect)
 }
 
-// GenMigFileName generates migration file name for for given dialect.
-// Returned file name matches migFileName regexp.
-func GenMigFileName(dialect string) (string, int64) {
+// NextMigFileName returns unique migration file name.
+// Returned file name matches migrationFileName regexp.
+func NextMigFileName(dialect string) (string, int64) {
     ts := time.Now().UnixNano()
-    desc := Desc(ts, dialect)
+    desc := MigrationDescriptor(dialect, ts)
     return fmt.Sprintf("mig_%s.go", desc), ts
 }
 
-// Desc returns unique migration job descriptor.
-func Desc(id int64, dialect string) string {
+// MigrationDescriptor returns unique migration descriptor.
+func MigrationDescriptor(dialect string, id int64) string {
     return dialect + "_" + strconv.FormatInt(id, 10)
 }
