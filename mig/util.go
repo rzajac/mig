@@ -1,33 +1,53 @@
 package mig
 
 import (
-    "regexp"
     "errors"
-    "path"
-    "os"
     "fmt"
+    "io/ioutil"
+    "os"
+    "path"
+    "regexp"
     "time"
 )
 
 // Regexp pattern matching migration file name.
-var migName = regexp.MustCompile(`^mig_([a-z]+)_([0-9]{19})\.go$`)
+var migFileName = regexp.MustCompile(`^mig_([a-z]+)_([0-9]{19})\.go$`)
 
-// IsMigration returns true if path is a migration file.
-func IsMigration(path string) bool {
-    p := migName.FindAllStringSubmatch(path, 3)
-    return len(p) > 0
+// Regexp pattern matching migration file name.
+var migStructFileName = regexp.MustCompile(`^mig_(mysql)\.go$`)
+
+// IsMigFile returns true if path is a migration file.
+func IsMigFile(file string) bool {
+    p := migFileName.FindAllStringSubmatch(path.Base(file), 3)
+    return len(p) == 1 && len(p[0]) == 3
 }
 
-// FileDialectAndTs returns dialect and creation timestamp for given migration file.
-func FileDialectAndTs(file string) (string, string, error) {
-    p := migName.FindAllStringSubmatch(path.Base(file), 3)
+// IsMigStructFile returns true if path is a migration struct file.
+func IsMigStructFile(file string) bool {
+    p := migStructFileName.FindAllStringSubmatch(path.Base(file), 2)
+    return len(p) == 1 && len(p[0]) == 2
+}
+
+// MigFileParts returns Dialect and creation timestamp for
+// given migration file name.
+func MigFileParts(file string) (string, string, error) {
+    p := migFileName.FindAllStringSubmatch(path.Base(file), 3)
     if len(p) == 0 && len(p[0]) == 3 {
         return "", "", errors.New("not a migration file")
     }
     return p[0][1], p[0][2], nil
 }
 
-// CreateDir creates directory if it does not exist.
+// StructFileParts returns Dialect for given struct migration file name.
+func StructFileParts(file string) (string, error) {
+    p := migStructFileName.FindAllStringSubmatch(path.Base(file), 2)
+    if len(p) == 0 && len(p[0]) == 2 {
+        return "", errors.New("not a migration struct file")
+    }
+    return p[0][1], nil
+}
+
+// CreateDir creates directory.
 func CreateDir(path string) error {
     fi, err := os.Stat(path)
     if err != nil {
@@ -44,35 +64,57 @@ func CreateDir(path string) error {
 
 // FileExists returns true if path points to an existing file.
 func FileExists(path string) (bool, error) {
-    fi, err := os.Stat(path)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return false, nil
-        }
+    _, err := os.Stat(path)
+    switch {
+    case os.IsNotExist(err):
+        return false, nil
+    case err != nil:
         return false, err
+    default:
+        return true, nil
     }
-    return !fi.IsDir(), nil
 }
 
 // DirExists returns true if path points to an existing directory.
-func DirExists(path string) (bool, error) {
+func IsDir(path string) (bool, error) {
     fi, err := os.Stat(path)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return false, nil
-        }
+    switch {
+    case os.IsNotExist(err):
+        return false, nil
+    case err != nil:
         return false, err
+    default:
+        return fi.IsDir(), nil
     }
-    return fi.IsDir(), nil
 }
 
-// GenMigMainFileName returns main migration file name for for given dialect.
-func GenMigMainFileName(dialect string) string {
+// IsSupDialect returns true if Dialect is on the list of supported dialects.
+func IsSupDialect(dialect string) bool {
+    for _, d := range dialects {
+        if d == dialect {
+            return true
+        }
+    }
+    return false
+}
+
+// FileCount returns number of files in the directory.
+func FileCount(dirname string) (int, error) {
+    fs, err := ioutil.ReadDir(dirname)
+    if err != nil {
+        return 0, err
+    }
+    return len(fs), nil
+}
+
+// MigStructFileName returns main migration file name for for given Dialect.
+func MigStructFileName(dialect string) string {
     return fmt.Sprintf("mig_%s.go", dialect)
 }
 
-// GenMigFileName returns migration file name for for given dialect.
-func GenMigFileName(dialect string) (int64, string) {
+// MigFileName returns migration file name for for given Dialect.
+func MigFileName(dialect string) (int64, string) {
     ts := time.Now().UnixNano()
     return ts, fmt.Sprintf("mig_%s_%d.go", dialect, ts)
 }
+

@@ -10,7 +10,7 @@ import (
 type File struct {
     dir     *Dir      // Directory file is located in.
     path    string    // Absolute path.
-    dialect string    // Migration dialect.
+    dialect string    // Migration Dialect.
     ts      time.Time // Creation time.
 }
 
@@ -20,7 +20,7 @@ func FileFromPath(path string) (*File, error) {
     if err != nil {
         return nil, err
     }
-    dialect, tss, err := FileDialectAndTs(path)
+    dialect, tss, err := MigFileParts(path)
     if err != nil {
         return nil, err
     }

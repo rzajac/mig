@@ -2,10 +2,11 @@ package mig
 
 import (
     "testing"
+
     "github.com/stretchr/testify/assert"
 )
 
-func TestIsMigration(t *testing.T) {
+func TestIsMigFile(t *testing.T) {
     tt := []struct {
         name string
         exp  bool
@@ -16,7 +17,22 @@ func TestIsMigration(t *testing.T) {
     }
 
     for _, tc := range tt {
-        assert.Exactly(t, tc.exp, IsMigration(tc.name))
+        assert.Exactly(t, tc.exp, IsMigFile(tc.name))
+    }
+}
+
+func TestIsMigStructFile(t *testing.T) {
+    tt := []struct {
+        name string
+        exp  bool
+    }{
+        {"mig_mysql.go", true},
+        {"mig_pg.go", false},
+        {"file.go", false},
+    }
+
+    for _, tc := range tt {
+        assert.Exactly(t, tc.exp, IsMigStructFile(tc.name))
     }
 }
 
@@ -31,7 +47,7 @@ func TestDescMigration(t *testing.T) {
     }
 
     for _, tc := range tt {
-        dialect, ts, err := FileDialectAndTs(tc.name)
+        dialect, ts, err := MigFileParts(tc.name)
         if tc.err {
             assert.Error(t, err)
         } else {
