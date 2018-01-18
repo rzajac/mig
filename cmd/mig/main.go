@@ -7,6 +7,7 @@ import (
     "github.com/rzajac/mig/mig"
     "fmt"
     "github.com/pkg/errors"
+    "path/filepath"
 )
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 func getMig(ctx *cli.Context) (*mig.Mig, error) {
     dialect := ctx.Args().First()
     dir := ctx.Args().Get(1)
-    if err := heckDialectDir(dialect, dir); err != nil {
+    if err := checkArgs(dialect, dir); err != nil {
         return nil, err
     }
     m, err := mig.NewMig(dir, dialect)
@@ -55,12 +56,12 @@ func getMig(ctx *cli.Context) (*mig.Mig, error) {
     return m, nil
 }
 
-func heckDialectDir(dialect, dir string) error {
+func checkArgs(dialect, dir string) error {
     if dialect == "" {
-        return errors.New("dialect must be provided")
+        return errors.New("dialect argument must be provided")
     }
     if dir == "" {
-        return errors.New("directory must be provided")
+        return errors.New("directory argument must be provided")
     }
     return nil
 }
@@ -78,5 +79,13 @@ func NewMigration(ctx *cli.Context) error {
     if err != nil {
         return err
     }
-    return m.New()
+    file, err := m.New()
+    if err != nil {
+        return err
+    }
+
+    tmp, _ := os.Getwd()
+    tmp, _ = filepath.Rel(tmp, file)
+    fmt.Printf("created migration file %s\n", tmp)
+    return nil
 }

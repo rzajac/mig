@@ -9,8 +9,8 @@ var dialects = [...]string{"mysql"}
 
 // A Mig is a migrations manager.
 type Mig struct {
-    State   *Dir
-    Dialect string
+    dir     *Dir
+    dialect string
 }
 
 // NewMig creates new Mig instance.
@@ -18,20 +18,20 @@ func NewMig(root, dialect string) (*Mig, error) {
     if IsSupDialect(dialect) == false {
         return nil, fmt.Errorf("unsupported dialect: %s", dialect)
     }
-    m := &Mig{Dialect: dialect}
-    m.State = NewState(root)
-    if m.State.Err != nil {
-        return nil, m.State.Err
+    m := &Mig{dialect: dialect}
+    m.dir = NewDir(root)
+    if m.dir.Error != nil {
+        return nil, m.dir.Error
     }
     return m, nil
 }
 
-// Initialize initializes migration directory.
-func (m *Mig) Initialize(dialect string) error {
-    return m.State.Initialize(dialect)
+// Init initializes migration directory.
+func (m *Mig) Initialize() error {
+    return m.dir.Init(m.dialect)
 }
 
 // New creates new migration file for given dialect.
-func (m *Mig) New(dialect string) (string, error) {
-    return m.State.NewMigration(dialect)
+func (m *Mig) New() (string, error) {
+    return m.dir.NewMigration(m.dialect)
 }

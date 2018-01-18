@@ -32,7 +32,7 @@ func TestIsMigStructFile(t *testing.T) {
     }
 
     for _, tc := range tt {
-        assert.Exactly(t, tc.exp, IsMigStructFile(tc.name))
+        assert.Exactly(t, tc.exp, IsDialectFile(tc.name))
     }
 }
 
@@ -47,7 +47,7 @@ func TestDescMigration(t *testing.T) {
     }
 
     for _, tc := range tt {
-        dialect, ts, err := MigFileParts(tc.name)
+        dialect, ts, err := DecodeMigFile(tc.name)
         if tc.err {
             assert.Error(t, err)
         } else {
