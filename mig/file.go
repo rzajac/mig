@@ -2,7 +2,6 @@ package mig
 
 import (
     "time"
-    "strconv"
     "path"
     "io/ioutil"
     "os"
@@ -65,12 +64,10 @@ func NewFileFromPath(path string) (*File, error) {
     switch {
     case IsMigFile(f.Path):
         f.Kind = kindMigr
-        var tss string
         var tsi int64
-        if f.Dialect, tss, err = DecodeMigFile(f.Path); err != nil {
+        if f.Dialect, tsi, err = DecodeMigFile(f.Path); err != nil {
             return nil, err
         }
-        tsi, _ = strconv.ParseInt(tss, 10, 64)
         f.Ts = time.Unix(0, tsi)
     case IsDialectFile(f.Path):
         f.Kind = kindDial
@@ -115,9 +112,9 @@ func (f *File) genContent() ([]byte, error) {
     switch f.Dialect {
     case "mysql":
         if f.Kind == kindDial {
-            tpl = dialect.MysqlDialectTpl
+            tpl = dialect.MySQLDialectTpl
         } else {
-            tpl = dialect.MysqlMigTpl
+            tpl = dialect.MySQLMigTpl
         }
     }
 
@@ -128,3 +125,7 @@ func (f *File) genContent() ([]byte, error) {
     return buf.Bytes(), nil
 }
 
+// descriptor returns unique migration file descriptor.
+func (f *File) descriptor() string {
+    return Desc(f.Ts.UnixNano(), f.Dialect)
+}

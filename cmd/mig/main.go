@@ -35,6 +35,13 @@ func main() {
             Description: "adds new migration file for given dialect",
             Action:      NewMigration,
         },
+        {
+            Name:        "migrate",
+            Usage:       "Apply migrations",
+            ArgsUsage:   "dialect dir",
+            Description: "applies not applied migrations",
+            Action:      Migrate,
+        },
     }
 
     if err := app.Run(os.Args); err != nil {
@@ -88,4 +95,12 @@ func NewMigration(ctx *cli.Context) error {
     tmp, _ = filepath.Rel(tmp, file)
     fmt.Printf("created migration file %s\n", tmp)
     return nil
+}
+
+func Migrate(ctx *cli.Context) error {
+    m, err := getMig(ctx)
+    if err != nil {
+        return err
+    }
+    return m.Migrate()
 }

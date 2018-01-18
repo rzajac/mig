@@ -25,7 +25,7 @@ func NewMySQL(user, pass, host, schema string) (*MySQL, error) {
 
 // MigEnsure checks if migration table is present and creates it if needed.
 func (m *MySQL) MigEnsure() error {
-    if _, err := m.Exec(mysqlMigCreate); err != nil {
+    if _, err := m.Exec(mySQLMigTableCreate); err != nil {
         return err
     }
     return nil

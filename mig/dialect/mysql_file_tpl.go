@@ -6,11 +6,13 @@ import (
     "strconv"
 )
 
-var tplFuncs = tpl.FuncMap{
+// Template function map.
+var tplFnMap = tpl.FuncMap{
     "fTime": func(t time.Time) string { return strconv.FormatInt(t.UnixNano(), 10) },
 }
 
-var MysqlDialectTpl = tpl.Must(tpl.New("mig-mysql-dialect-tpl").Funcs(tplFuncs).Parse(`
+// MySQL dialect file template.
+var MySQLDialectTpl = tpl.Must(tpl.New("mig-mysql-dialect-tpl").Funcs(tplFnMap).Parse(`
 package migration
 
 import "database/sql"
@@ -22,7 +24,8 @@ type MigMySQL struct {
 }
 `))
 
-var MysqlMigTpl = tpl.Must(tpl.New("mig-mysql-migration-tpl").Funcs(tplFuncs).Parse(`
+// MySQL migration file template.
+var MySQLMigTpl = tpl.Must(tpl.New("mig-mysql-migration-tpl").Funcs(tplFnMap).Parse(`
 package migration
 
 import (
@@ -31,13 +34,13 @@ import (
 )
 
 // MigUp{{.Ts | fTime}}
-func (m *MigMySQL) Mig{{.Ts | fTime}}_up() error {
+func (m *MigMySQL) MigUp{{.Ts | fTime}}() error {
     fmt.Printf("up from {{.Ts | fTime}}\n")
     return errors.New("up migration {{.Ts | fTime}} not implemented")
 }
 
 // MigDown{{.Ts | fTime}}
-func (m *MigMySQL) Mig{{.Ts | fTime}}_down() error {
+func (m *MigMySQL) MigDown{{.Ts | fTime}}() error {
     fmt.Printf("down from {{.Ts | fTime}}\n")
     return errors.New("down migration {{.Ts | fTime}} not implemented")
 }

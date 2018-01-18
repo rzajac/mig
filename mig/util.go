@@ -8,6 +8,7 @@ import (
     "path"
     "regexp"
     "time"
+    "strconv"
 )
 
 // Regexp pattern matching migration file name.
@@ -24,13 +25,17 @@ func IsMigFile(file string) bool {
 }
 
 // DecodeMigFile decodes dialect and timestamp which are encoded in the
-// migration file name.
-func DecodeMigFile(file string) (string, string, error) {
+// migration file name. Returns dialect and migration id.
+func DecodeMigFile(file string) (string, int64, error) {
     p := migFileName.FindAllStringSubmatch(path.Base(file), 3)
     if len(p) == 0 && len(p[0]) == 3 {
-        return "", "", fmt.Errorf("%s is not a migration file", file)
+        return "", 0, fmt.Errorf("%s is not a migration file", file)
     }
-    return p[0][1], p[0][2], nil
+    id, err := strconv.ParseInt(p[0][2], 10, 64)
+    if err != nil {
+        return "", 0, err
+    }
+    return p[0][1], id, nil
 }
 
 // IsDialectFile returns true if path is a dialect file.
@@ -109,5 +114,11 @@ func GenDialectFileName(dialect string) string {
 // Returned file name matches migFileName regexp.
 func GenMigFileName(dialect string) (string, int64) {
     ts := time.Now().UnixNano()
-    return fmt.Sprintf("mig_%s_%d.go", dialect, ts), ts
+    desc := Desc(ts, dialect)
+    return fmt.Sprintf("mig_%s.go", desc), ts
+}
+
+// Desc returns unique migration job descriptor.
+func Desc(id int64, dialect string) string {
+    return dialect + "_" + strconv.FormatInt(id, 10)
 }
