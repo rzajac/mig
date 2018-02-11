@@ -7,47 +7,12 @@ import (
 
     "github.com/codegangsta/cli"
     "github.com/pkg/errors"
+    "github.com/rzajac/mig/cmd/mig/cmd"
     "github.com/rzajac/mig/mig"
 )
 
 func main() {
-    app := cli.NewApp()
-    app.Name = "mig"
-    app.Usage = "database migration tool"
-    app.Version = "0.0.1"
-    app.Authors = []cli.Author{
-        {Name: "Rafal Zajac", Email: "rzajac@gmail.com"},
-    }
-    app.Copyright = "(c) 2018 Rafal Zajac <rzajac@gmail.com>"
-
-    app.Commands = []cli.Command{
-        {
-            Name:        "init",
-            Usage:       "Initialize migrations.",
-            ArgsUsage:   "dialect dir",
-            Description: "Initializes migrations directory for given dialect.",
-            Action:      InitMigrationsCmd,
-        },
-        {
-            Name:        "new",
-            Usage:       "Add new migration",
-            ArgsUsage:   "dialect dir",
-            Description: "adds new migration file for given dialect",
-            Action:      NewMigrationCmd,
-        },
-        {
-            Name:        "migrate",
-            Usage:       "Apply migrations",
-            ArgsUsage:   "dialect dir",
-            Description: "applies not applied migrations",
-            Action:      Migrate,
-        },
-    }
-
-    if err := app.Run(os.Args); err != nil {
-        fmt.Printf("%v\n", err)
-        os.Exit(1)
-    }
+    cmd.Execute()
 }
 
 // getMig returns Mig instance.
