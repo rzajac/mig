@@ -1,10 +1,11 @@
 package mig
 
-type MigConfig struct {
-    Dir string               `yaml:"dir"`
-    DBs map[string]*DBConfig `yaml:"db"`
+type Cfg struct {
+    Dir string  `yaml:"dir"`
+    DBs []DBCfg `yaml:"dbs"`
 }
 
-type DBConfig struct {
+type DBCfg struct {
+    Name    string `yaml:"name"`
     Dialect string `yaml:"dialect"`
 }

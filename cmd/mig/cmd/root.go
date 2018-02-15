@@ -3,6 +3,7 @@ package cmd
 import (
     "encoding/json"
     "log"
+    "os"
 
     "github.com/rzajac/mig/version"
     "github.com/spf13/cobra"
@@ -18,7 +19,7 @@ func init() {
     rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./mig.yaml)")
     rootCmd.PersistentFlags().BoolP("version", "v", false, "version")
     rootCmd.PersistentFlags().BoolP("debug", "d", false, "run nin debug mode")
-    viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+    cfgFile = os.Getenv("MIG_CONFIG")
 }
 
 // rootCmd is the main command for the box-auth binary.
@@ -32,7 +33,7 @@ var rootCmd = &cobra.Command{
 // Execute executes root command.
 func Execute() {
     if err := rootCmd.Execute(); err != nil {
-        log.Fatal(err)
+        os.Exit(1)
     }
 }
 
@@ -46,7 +47,6 @@ func initConfig() {
     if cfgFile != "" {
         viper.SetConfigFile(cfgFile)
     }
-
     // If a config file is found, read it in.
     if err := viper.ReadInConfig(); err != nil {
         log.Fatal(err)
@@ -63,8 +63,6 @@ func getVersion() string {
         version.GitHash,
         version.GitTreeState,
     }
-
     j, _ := json.Marshal(v)
-
     return string(j)
 }

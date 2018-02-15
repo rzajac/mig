@@ -1,9 +1,8 @@
 package cmd
 
 import (
-    "fmt"
     "io/ioutil"
-    "path/filepath"
+    "path"
 
     "github.com/rzajac/mig/mig"
     "github.com/spf13/cobra"
@@ -12,39 +11,30 @@ import (
 )
 
 var initCmd = &cobra.Command{
-    Use:   "init dialect",
+    Use:   "init",
     Short: "Initialize migrations",
     Long:  `Initialize migrations.`,
     RunE: func(cmd *cobra.Command, args []string) error {
-        dir, err := filepath.Abs(viper.GetString("dir"))
-        if err != nil {
-            return err
-        }
-
-        m, err := mig.NewMig(dir, viper.GetString("db.users.dialect"))
-        if err != nil {
-            return err
-        }
-
         cfgPath := viper.ConfigFileUsed()
-        fmt.Println(cfgPath)
-
         cfg, err := ioutil.ReadFile(cfgPath)
         if err != nil {
             return err
         }
-
-        fmt.Println(string(cfg))
-
-        out := &mig.MigConfig{}
+        out := &mig.Cfg{}
         if err := yaml.UnmarshalStrict(cfg, out); err != nil {
             return err
         }
-
-        fmt.Println("Config:")
-        fmt.Println(out.DBs["users"].Dialect)
-
-        return m.Initialize()
+        for _, cfg := range out.DBs {
+            migPath := path.Join(path.Dir(cfgPath), out.Dir, cfg.Dialect, cfg.Name)
+            m, err := mig.NewMig(migPath, cfg.Dialect)
+            if err != nil {
+                return err
+            }
+            if err := m.Initialize(); err != nil {
+                return err
+            }
+        }
+        return nil
     },
 }
 
