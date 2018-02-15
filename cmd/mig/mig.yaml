@@ -1,3 +1,8 @@
-mig:
-  dir: ../../tmp/mig
+dir: ../../tmp/mig
+db:
+  users:
+    dialect: mysql
+  logs:
+    dialect: mysql
+
 

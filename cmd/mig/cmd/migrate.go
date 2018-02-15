@@ -4,7 +4,7 @@ import "github.com/spf13/cobra"
 
 var migrateCmd = &cobra.Command{
     Use:   "migrate",
-    Short: "migrate database",
+    Short: "Migrate database",
     Long:  `Apply not applied migrations.`,
     Run: func(cmd *cobra.Command, args []string) {
 

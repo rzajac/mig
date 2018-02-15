@@ -9,7 +9,7 @@ import (
 
 var newCmd = &cobra.Command{
     Use:   "new",
-    Short: "add new migration",
+    Short: "Add new migration",
     Long:  `Add new migration.`,
     Args: func(cmd *cobra.Command, args []string) error {
         if len(args) != 1 {

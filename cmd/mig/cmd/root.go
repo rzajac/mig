@@ -2,11 +2,9 @@ package cmd
 
 import (
     "encoding/json"
-    "os"
-    "strings"
+    "log"
 
     "github.com/rzajac/mig/version"
-    "github.com/sirupsen/logrus"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
 )
@@ -14,13 +12,7 @@ import (
 // cfgFile holds the path to configuration file.
 var cfgFile string
 
-// log provides global logger.
-var log *logrus.Entry
-
 func init() {
-    logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: "2006-01-02T15:04:05.999999-07:00"})
-    log = logrus.WithFields(logrus.Fields{"service": "mig"})
-
     cobra.OnInitialize(initConfig)
     rootCmd.SetVersionTemplate(`{{.Version}}`)
     rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./mig.yaml)")
@@ -40,17 +32,12 @@ var rootCmd = &cobra.Command{
 // Execute executes root command.
 func Execute() {
     if err := rootCmd.Execute(); err != nil {
-        log.Error(err)
-        os.Exit(1)
+        log.Fatal(err)
     }
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-    // Add a prefix while reading from the environment variables.
-    viper.SetEnvPrefix("MIG")
-    // Replace dot with underscore when looking for environmental variables.
-    viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
     // Name of the configuration file and where to look for it.
     viper.SetConfigName("mig")
     viper.AddConfigPath("/usr/etc/mig")
@@ -59,10 +46,11 @@ func initConfig() {
     if cfgFile != "" {
         viper.SetConfigFile(cfgFile)
     }
-    viper.AutomaticEnv()
 
     // If a config file is found, read it in.
-    viper.ReadInConfig()
+    if err := viper.ReadInConfig(); err != nil {
+        log.Fatal(err)
+    }
 }
 
 // getVersion returns JSON formatted application version.
