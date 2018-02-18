@@ -1,6 +1,16 @@
-dir: migration
-dbs:
-  - name: users
+# The package migrations are for.
+package: git.boxdrop.net/plg/auth
+# List of databases each with unique name.
+db:
+  setup:
     dialect: mysql
-  - name: logs
+    host: localhost:3306
+    user: root
+    name: super_secret
+
+  auth:
     dialect: mysql
+    host: localhost:3306
+    user: box_auth
+    pass: fn9jYsPkDXhZy3Uc
+    name: box_auth_service
