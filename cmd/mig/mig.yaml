@@ -1,7 +1,7 @@
 # The package migrations are for.
 package: git.boxdrop.net/plg/auth
 # List of databases each with unique name.
-db:
+databases:
   setup:
     dialect: mysql
     host: localhost:3306

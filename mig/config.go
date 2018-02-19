@@ -10,11 +10,11 @@ import (
     "gopkg.in/yaml.v2"
 )
 
-// config represents Mig configuration.
+// config represents migration configuration.
 type config struct {
-    Path      string                                // Absolute path to configuration file.
-    Package   string               `yaml:"package"` // Migrations root directory.
-    Databases map[string]*DBConfig `yaml:"db"`      // List of database configurations.
+    Path      string                                  // Absolute path to configuration file.
+    Package   string               `yaml:"package"`   // Migrations root directory.
+    Databases map[string]*DBConfig `yaml:"databases"` // List of database configurations.
 }
 
 // DBConfig represents database configuration.
@@ -26,9 +26,9 @@ type DBConfig struct {
     Name    string `yaml:"name"`
 }
 
-// MigDir returns absolute path to the directory for
+// migDir returns absolute path to the directory for
 // migrations for given database name.
-func (cfg *config) MigDir(name string) (string, error) {
+func (cfg *config) migDir(name string) (string, error) {
     db := cfg.getDBConfig(name)
     if db == nil {
         return "", errors.Errorf("unknown database %s", name)
