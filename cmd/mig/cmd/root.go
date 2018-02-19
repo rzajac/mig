@@ -5,6 +5,7 @@ import (
     "log"
     "os"
 
+    "github.com/rzajac/mig/mig"
     "github.com/rzajac/mig/version"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
@@ -37,6 +38,15 @@ func Execute() {
     }
 }
 
+// GetMig get configured Migration.
+func GetMig(configPath string) (*mig.Mig, error) {
+    cfg, err := mig.LoadConfig(configPath)
+    if err != nil {
+        return nil, err
+    }
+    return mig.NewMig(cfg)
+}
+
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
     // Name of the configuration file and where to look for it.
@@ -66,4 +76,3 @@ func getVersion() string {
     j, _ := json.Marshal(v)
     return string(j)
 }
-

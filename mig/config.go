@@ -6,11 +6,12 @@ import (
     "os"
     "path"
 
+    "github.com/pkg/errors"
     "gopkg.in/yaml.v2"
 )
 
-// Config represents Mig configuration.
-type Config struct {
+// config represents Mig configuration.
+type config struct {
     Path      string                                // Absolute path to configuration file.
     Package   string               `yaml:"package"` // Migrations root directory.
     Databases map[string]*DBConfig `yaml:"db"`      // List of database configurations.
@@ -18,7 +19,6 @@ type Config struct {
 
 // DBConfig represents database configuration.
 type DBConfig struct {
-    Config  Config
     Dialect string `yaml:"dialect"`
     Host    string `yaml:"host"`
     User    string `yaml:"user"`
@@ -26,8 +26,18 @@ type DBConfig struct {
     Name    string `yaml:"name"`
 }
 
-// GetDBConfig returns database configuration by name.
-func (cfg *Config) GetDBConfig(name string) *DBConfig {
+// MigDir returns absolute path to the directory for
+// migrations for given database name.
+func (cfg *config) MigDir(name string) (string, error) {
+    db := cfg.getDBConfig(name)
+    if db == nil {
+        return "", errors.Errorf("unknown database %s", name)
+    }
+    return path.Join(cfg.Path, db.Name, db.Dialect), nil
+}
+
+// getDBConfig returns database configuration by name.
+func (cfg *config) getDBConfig(name string) *DBConfig {
     if db, ok := cfg.Databases[name]; ok {
         return db
     }
@@ -35,23 +45,28 @@ func (cfg *Config) GetDBConfig(name string) *DBConfig {
 }
 
 // validate validates mig configuration.
-func (cfg *Config) validate() error {
+func (cfg *config) validate() error {
+    for _, db := range cfg.Databases {
+        if err := db.validate(); err != nil {
+            return err
+        }
+    }
+    // TODO: validate Config.
     return nil
 }
 
-// MigDir returns absolute path to the directory for migrations for given
-// database name.
-func (cfg *DBConfig) MigDir(name string) (string, error) {
-    return path.Join(cfg.Path, db.Name, db.Dialect), nil
+// validate validates database configuration.
+func (cfg *DBConfig) validate() error {
+    return nil
 }
 
 // LoadConfig loads mig configuration file located at cfgPath.
-func LoadConfig(cfgPath string) (*Config, error) {
+func LoadConfig(cfgPath string) (*config, error) {
     file, err := ioutil.ReadFile(cfgPath)
     if err != nil {
         return nil, err
     }
-    cfg := &Config{}
+    cfg := &config{}
     if err := yaml.UnmarshalStrict(file, cfg); err != nil {
         return nil, err
     }
