@@ -1,12 +1,18 @@
 package mig
 
 import (
+    "bytes"
     "fmt"
+    "io/ioutil"
     "os"
     "path"
+    "path/filepath"
     "regexp"
     "strconv"
+    "text/template"
     "time"
+
+    "github.com/pkg/errors"
 )
 
 // Regexp pattern matching migration file name.
@@ -52,7 +58,7 @@ func IsDir(path string) (bool, error) {
     case os.IsNotExist(err):
         return false, nil
     case err != nil:
-        return false, err
+        return false, errors.WithStack(err)
     default:
         return fi.IsDir(), nil
     }
@@ -85,4 +91,27 @@ func NextMigFileName(dialect string) (string, int64) {
 // MigrationDescriptor returns unique migration descriptor.
 func MigrationDescriptor(dialect string, id int64) string {
     return dialect + "_" + strconv.FormatInt(id, 10)
+}
+
+// init initialize migrations directory for given dialect.
+func CreateBaseMig(dst, dialect string) error {
+    var tpl *template.Template
+    switch dialect {
+    case "mysql":
+        tpl = mySQLStructTpl
+    }
+    var data struct {
+        Pkg string
+    }
+    data.Pkg = path.Base(dst)
+
+    var buf bytes.Buffer
+    if err := tpl.Execute(&buf, data); err != nil {
+        return errors.WithStack(err)
+    }
+    dst = filepath.Join(dst, StructFileName(dialect))
+    if err := ioutil.WriteFile(dst, buf.Bytes(), 0666); err != nil {
+        return errors.WithStack(err)
+    }
+    return nil
 }

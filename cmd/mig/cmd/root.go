@@ -5,7 +5,6 @@ import (
     "log"
     "os"
 
-    "github.com/rzajac/mig/mig"
     "github.com/rzajac/mig/version"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
@@ -15,7 +14,7 @@ import (
 var cfgFile string
 
 func init() {
-    cobra.OnInitialize(initConfig)
+    cobra.OnInitialize(loadConfig)
     rootCmd.SetVersionTemplate(`{{.Version}}`)
     rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./mig.yaml)")
     rootCmd.PersistentFlags().BoolP("version", "v", false, "version")
@@ -38,22 +37,10 @@ func Execute() {
     }
 }
 
-// GetMig get configured Migration.
-func GetMig(configPath string) (*mig.Mig, error) {
-    cfg, err := mig.LoadConfig(configPath)
-    if err != nil {
-        return nil, err
-    }
-    return mig.NewMig(cfg)
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-    // Name of the configuration file and where to look for it.
+// loadConfig reads in config file.
+func loadConfig() {
     viper.SetConfigName("mig")
-    viper.AddConfigPath("/usr/etc/mig")
     viper.AddConfigPath(".")
-    // Load config file if it was explicitly passed.
     if cfgFile != "" {
         viper.SetConfigFile(cfgFile)
     }

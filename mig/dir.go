@@ -57,13 +57,11 @@ func (d *dir) newMigration(dialect string) (string, error) {
             return "", err
         }
     }
-
     file := newMigFile(d.migDir, dialect)
     if err := file.Save(); err != nil {
         return "", err
     }
     d.migrations[file.descriptor()] = file
-
     return file.Path, nil
 }
 

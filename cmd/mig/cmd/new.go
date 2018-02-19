@@ -1,27 +1,30 @@
 package cmd
 
 import (
-    "fmt"
-
     "github.com/pkg/errors"
+    "github.com/rzajac/mig/mig"
     "github.com/spf13/cobra"
+    "github.com/spf13/viper"
 )
 
 var newCmd = &cobra.Command{
-    Use:   "new",
-    Short: "Add new migration",
-    Long:  `Add new migration.`,
+    Use:   "new [name]",
+    Short: "Create new migration",
     Args: func(cmd *cobra.Command, args []string) error {
         if len(args) != 1 {
-            return errors.New("requires one arg")
-        }
-        if args[0] != "mysql" {
-            return errors.New("currently only mysql is supported")
+            return errors.New("requires connection name argument")
         }
         return nil
     },
-    Run: func(cmd *cobra.Command, args []string) {
-        fmt.Println(args)
+    RunE: func(cmd *cobra.Command, args []string) error {
+        m, err := mig.NewMig(viper.ConfigFileUsed())
+        if err != nil {
+            return err
+        }
+        if err := m.Initialize(); err != nil {
+            return err
+        }
+        return nil
     },
 }
 

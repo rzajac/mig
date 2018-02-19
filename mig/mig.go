@@ -1,5 +1,11 @@
 package mig
 
+import (
+    "os"
+
+    "github.com/pkg/errors"
+)
+
 // Supported dialects
 var dialects = [...]string{"mysql"}
 
@@ -9,15 +15,31 @@ type Mig struct {
 }
 
 // NewMig creates new Mig instance.
-func NewMig(config *config) (*Mig, error) {
-    m := &Mig{
-        config: config,
+func NewMig(configPath string) (*Mig, error) {
+    cfg, err := newConfig(configPath)
+    if err != nil {
+        return nil, err
     }
-    return m, nil
+    return &Mig{cfg}, nil
 }
 
 // Init initializes migration directory.
 func (m *Mig) Initialize() error {
+    for _, db := range m.config.Databases {
+        ok, err := IsDir(db.migDir)
+        if err != nil {
+            return err
+        }
+        if ok {
+            continue
+        }
+        if err := os.MkdirAll(db.migDir, 0777); err != nil {
+            return errors.WithStack(err)
+        }
+        if err := CreateBaseMig(db.migDir, db.Dialect); err != nil {
+            return err
+        }
+    }
     return nil
 }
 
