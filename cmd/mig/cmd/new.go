@@ -9,19 +9,19 @@ import (
 
 var newCmd = &cobra.Command{
     Use:   "new [name]",
-    Short: "Create new migration",
+    Short: "Create new migration for given database name",
     Args: func(cmd *cobra.Command, args []string) error {
         if len(args) != 1 {
-            return errors.New("requires connection name argument")
+            return errors.New("requires database name argument")
         }
         return nil
     },
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := mig.NewMig(viper.ConfigFileUsed())
+        m, err := mig.NewMigFromConfig(viper.ConfigFileUsed())
         if err != nil {
             return err
         }
-        if err := m.Initialize(); err != nil {
+        if err := m.NewMigration(args[0]); err != nil {
             return err
         }
         return nil
