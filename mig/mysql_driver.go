@@ -24,6 +24,10 @@ func (m *mysqlDriver) Apply(migration Migration) error {
     return nil
 }
 
+func (m *mysqlDriver) Applied() ([]Descriptor, error) {
+    return nil, nil
+}
+
 func (m *mysqlDriver) Initialize() error {
     return nil
 }

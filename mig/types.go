@@ -1,20 +1,11 @@
 package mig
 
-import "errors"
-
-// Migration direction.
-type Direction int
-
-// Migration directions.
-const (
-    Up   Direction = iota
-    Down
+import (
+    "errors"
+    "time"
 )
 
-// MigFn is a function performing database schema migration.
-type MigFn func() error
-
-var ErrNoMigrations = errors.New("no more migrations")
+var ErrNoMoreMigrations = errors.New("no more migrations")
 var ErrNotInitialized = errors.New("database not initialized")
 
 // The Loader interface is implemented by configuration loaders.
@@ -57,11 +48,11 @@ type Migrator interface {
     // Current returns migration version which Migrator currently points to.
     Current() int64
     // Next returns next migration to apply.
-    // Next returns ErrNoMigrations error if
+    // Next returns ErrNoMoreMigrations error if
     // there are no more migrations on the list.
     Next() (Migration, error)
     // Previous returns migration which preceded the current migration.
-    // Previous returns ErrNoMigrations error if the current migration is
+    // Previous returns ErrNoMoreMigrations error if the current migration is
     // first on the migrations list.
     Previous() (Migration, error)
 }
@@ -102,6 +93,8 @@ type Driver interface {
     Version() (int64, error)
     // Apply applies migration to the database.
     Apply(Migration) error
+    // Applied returns all applied migrations descriptions.
+    Applied() ([]Descriptor, error)
     // Initialize prepares underlying database for migrations.
     Initialize() error
     // Creator returns migration file creator.
@@ -115,4 +108,14 @@ type Creator interface {
     // If the migrations directory or base migration file doesn't exist
     // CreateMigration will first create them.
     CreateMigration(version int64) error
+}
+
+// Descriptor describes applied migration.
+type Descriptor interface {
+    // Version returns migration version.
+    Version() int
+    // Description returns migration description.
+    Description() string
+    // Created returns when migration has been applied in UTC.
+    Created() time.Time
 }
