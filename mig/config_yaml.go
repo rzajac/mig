@@ -46,3 +46,12 @@ func (c *yamlCfg) DbConfig(name string) (DbConfigurator, error) {
     }
     return db, nil
 }
+
+// DbConfigs implements Configurator interface.
+func (c *yamlCfg) DbConfigs() []string {
+    var names []string
+    for n := range c.DBs {
+        names = append(names, n)
+    }
+    return names
+}

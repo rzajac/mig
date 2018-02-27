@@ -2,7 +2,6 @@ package mig
 
 import (
     "bytes"
-    "fmt"
     "io/ioutil"
     "path"
     "text/template"
@@ -21,8 +20,8 @@ type Mig struct {
 // NewMig returns new Mig instance.
 func NewMig(cfg Configurator) (*Mig, error) {
     m := &Mig{
-        cfg: cfg,
-        prv: NewProvider(cfg),
+        cfg:    cfg,
+        prv:    NewProvider(cfg),
         migDir: path.Join(cfg.BaseDir(), "migrations"),
     }
     return m, nil
@@ -50,6 +49,7 @@ func (m *Mig) NewMigration(name string) error {
     if err := drv.Creator().CreateMigration(version); err != nil {
         return err
     }
+    m.createMain()
     return nil
 }
 
@@ -58,27 +58,33 @@ func (m *Mig) ensure() error {
     if err := checkCreateDir(m.migDir); err != nil {
         return err
     }
+    return nil
+}
+
+func (m *Mig)createMain() error {
     main := path.Join(m.migDir, "main.go")
-    fmt.Println(main)
-    ok, err := fileExists(main)
-    if err != nil {
-        return err
+    var data = struct {
+        Names []string
+    }{}
+    for _, n := range m.cfg.DbConfigs() {
+        if ok, _ := isDir(path.Join(m.migDir, n)); ok {
+            data.Names = append(data.Names, n)
+        }
     }
-    if !ok {
-        var buf bytes.Buffer
-        if err := mainTpl.Execute(&buf, nil); err != nil {
-            return errors.WithStack(err)
-        }
-        if err := ioutil.WriteFile(main, buf.Bytes(), 0666); err != nil {
-            return errors.WithStack(err)
-        }
+    var buf bytes.Buffer
+    if err := mainTpl.Execute(&buf, data); err != nil {
+        return errors.WithStack(err)
+    }
+    if err := ioutil.WriteFile(main, buf.Bytes(), 0666); err != nil {
+        return errors.WithStack(err)
     }
     return nil
 }
 
 var mainTpl = template.Must(template.New("mig-mysqlDriver-struct-tpl").Parse(`package main
 
-import (
+import ({{ range $name := .Names }}
+    _ "./{{ $name }}"{{ end }}
     "github.com/rzajac/mig/cmd/mig/cmd"
 )
 

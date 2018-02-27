@@ -84,6 +84,10 @@ func (m *Mig{{.Version}}) Version() int64 {
     return {{.Version}}
 }
 
+func (m *Mig{{.Version}}) IsApplied() bool {
+    return m.applied
+}
+
 // ======================= DO NOT EDIT ABOVE THIS LINE =======================
 
 func (m *Mig{{.Version}}) Apply() error {
@@ -96,11 +100,7 @@ func (m *Mig{{.Version}}) Revert() error {
     return err
 }
 
-func (m *Mig{{.Version}}) IsApplied() bool {
-    return m.applied
-}
-
 func (m *Mig{{.Version}}) Description() string {
-    return ""
+    return "example description for version {{.Version}}"
 }
 `))

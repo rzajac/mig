@@ -18,8 +18,10 @@ type Loader interface {
 type Configurator interface {
     // BaseDir returns absolute path to base directory.
     BaseDir() string
-    // DbConfigurator returns migration configuration by name.
+    // DbConfig returns migration configuration by name.
     DbConfig(name string) (DbConfigurator, error)
+    // DbConfigs returns all migration configuration names.
+    DbConfigs() []string
 }
 
 // The DbConfigurator interface is implemented by database configuration

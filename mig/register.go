@@ -1,9 +1,14 @@
 package mig
 
-import "sync"
+import (
+    "fmt"
+    "sync"
+)
 
 // registry keeps all registered migrations.
-var registry = newRegistry()
+var registry = &reg{
+    reg: make(map[string][]Migration),
+}
 
 // reg represents migrations registered by Register.
 type reg struct {
@@ -13,16 +18,15 @@ type reg struct {
     reg map[string][]Migration
 }
 
-// newRegistry creates new registry.
-func newRegistry() *reg {
-    return &reg{
-        reg: make(map[string][]Migration),
-    }
-}
-
 // Register registers migration.
 func Register(name string, m Migration) {
     registry.Lock()
     defer registry.Unlock()
     registry.reg[name] = append(registry.reg[name], m)
+}
+
+func List() {
+    for n, m := range registry.reg {
+        fmt.Println(n, m)
+    }
 }
