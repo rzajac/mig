@@ -2,9 +2,11 @@ package cmd
 
 import (
     "encoding/json"
+    "fmt"
     "log"
     "os"
 
+    "github.com/pkg/errors"
     "github.com/rzajac/mig/version"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
@@ -27,7 +29,7 @@ var rootCmd = &cobra.Command{
     Use:     "mig",
     Version: getVersion(),
     Short:   "database migration tool",
-    Long:    `Database migration tool.`,
+    Long:    "Database migration tool.",
 }
 
 // Execute executes root command.
@@ -62,4 +64,16 @@ func getVersion() string {
     }
     j, _ := json.Marshal(v)
     return string(j)
+}
+
+// stackTracer is an interface implemented by errors with stack trace.
+type stackTracer interface {
+    StackTrace() errors.StackTrace
+}
+
+func printErr(err error) {
+    fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+    if err, ok := err.(stackTracer); ok {
+        fmt.Fprintf(os.Stderr, "%+v\n", err)
+    }
 }

@@ -2,33 +2,52 @@ package mig
 
 import (
     "fmt"
+    "sort"
     "sync"
 )
 
-// reg is a global variable which keeps all registered migrations.
-var reg = &registry{
-    reg: make(map[string][]Executor, 0),
+// Registered migrations.
+var registered = &migrations{migs: make(map[string]migs)}
+
+// Register registers Migrator.
+func Register(target string, mgr Migrator) {
+    registered.Lock()
+    defer registered.Unlock()
+    registered.migs[target] = append(registered.migs[target], mgr)
 }
 
-// registry represents migrations registered by Register function.
-type registry struct {
+// Slice of Migrators with Sorter interface.
+type migs []Migrator
+
+func (e migs) Len() int           { return len(e) }
+func (e migs) Less(i, j int) bool { return e[i].Version() < e[j].Version() }
+func (e migs) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+
+// migrations represents list migrations.
+type migrations struct {
     sync.Mutex
-    // Map with registered migrations.
-    // The key is the name of the migration configuration.
-    reg map[string][]Executor
+    migs map[string]migs
 }
 
-// Register registers migration.
-func Register(name string, m Executor) {
-    reg.Lock()
-    defer reg.Unlock()
-    reg.reg[name] = append(reg.reg[name], m)
+// sort sots all registered migrations.
+func (m *migrations) sort() {
+    m.Lock()
+    defer m.Unlock()
+    for _, m := range m.migs {
+        sort.Sort(migs(m))
+    }
 }
 
-// List temporary debugging function.
 // TODO
-func List() {
-    for n, m := range reg.reg {
-        fmt.Println(n, m)
+//func (m *migrations) mark(target string, version int64) {
+//    for _, m := range registered.migs[target] {
+//        m.
+//    }
+//}
+
+// list lists migrations for given target.
+func (m *migrations) list(target string) {
+    for _, m := range registered.migs[target] {
+        fmt.Println(target, m.Version())
     }
 }

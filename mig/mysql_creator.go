@@ -43,7 +43,7 @@ func (cr *mysqlCreator) CreateMigration(version int64) error {
     return nil
 }
 
-// ensure ensures everything is ready to create migration files.
+// ensureFs ensures everything is ready to create migration files.
 func (cr *mysqlCreator) ensure() error {
     if err := checkCreateDir(cr.target.MigDir()); err != nil {
         return err
@@ -57,17 +57,17 @@ func (cr *mysqlCreator) path(version int64) string {
 }
 
 // MySQL migration file template.
-var mySQLMigTpl = template.Must(template.New("mig-mysqlDriver-struct-tpl").Parse(`package {{.Pkg}}
+var mySQLMigTpl = template.Must(template.New("registered-mysqlDriver-struct-tpl").Parse(`package {{.Pkg}}
 
 import (
     "database/sql"
     "time"
 
-    "github.com/rzajac/mig/mig"
+    "github.com/rzajac/registered/registered"
 )
 
 func init() {
-    mig.Register("setup", &Mig{{.Version}}{})
+    registered.Register("setup", &Mig{{.Version}}{})
 }
 
 type Mig{{.Version}} struct {

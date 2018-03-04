@@ -3,6 +3,7 @@ package mig
 import (
     "database/sql"
 
+    "github.com/go-sql-driver/mysql"
     "github.com/pkg/errors"
 )
 
@@ -18,6 +19,9 @@ func newMYSQLDriver(config Target) *mysqlDriver {
 }
 
 func (m *mysqlDriver) Open() error {
+    if m.db != nil {
+        return nil
+    }
     var err error
     m.db, err = sql.Open("mysql", m.target.Dsn())
     return err
@@ -31,10 +35,20 @@ func (m *mysqlDriver) Version() (int64, error) {
     var v int64
     row := m.db.QueryRow(mySQLGetVersion)
     err := row.Scan(&v)
+    if err == sql.ErrNoRows {
+        return 0, nil
+    }
+    if err, ok := err.(*mysql.MySQLError); ok && err.Number == 1146 {
+        return 0, ErrNotInitialized
+    }
     return v, err
 }
 
-func (m *mysqlDriver) Apply(migration Executor) error {
+func (m *mysqlDriver) Apply(migration Migrator) error {
+    return nil
+}
+
+func (m *mysqlDriver) Revert(migration Migrator) error {
     return nil
 }
 

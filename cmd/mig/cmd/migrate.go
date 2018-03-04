@@ -7,27 +7,29 @@ import (
     "github.com/spf13/viper"
 )
 
-var newCmd = &cobra.Command{
-    Use:   "new [target name]",
-    Short: "Create new migration for given target name",
+var migrateCmd = &cobra.Command{
+    Use:   "migrate [target name]",
+    Short: "Migrate target by name",
     Args: func(cmd *cobra.Command, args []string) error {
         if len(args) != 1 {
             return errors.New("requires target name argument")
         }
         return nil
     },
-    RunE: func(cmd *cobra.Command, args []string) error {
+    Run: func(cmd *cobra.Command, args []string) {
         m, err := mig.NewMigFromConfig(viper.ConfigFileUsed())
         if err != nil {
-            return err
+            printErr(err)
+            return
         }
-        if err := m.CreateMigration(args[0]); err != nil {
-            return err
+        if err := m.Migrate(args[0]); err != nil {
+            printErr(err)
+            return
         }
-        return nil
+        return
     },
 }
 
 func init() {
-    rootCmd.AddCommand(newCmd)
+    rootCmd.AddCommand(migrateCmd)
 }

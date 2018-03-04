@@ -2,7 +2,6 @@ package mig
 
 import (
     "errors"
-    "io"
     "time"
 )
 
@@ -35,19 +34,24 @@ type Target interface {
 
 // Driver represents database driver.
 type Driver interface {
-    io.Closer
     // Open opens connection to database.
+    // Maybe called multiple times on the same driver instance.
     Open() error
+    // Close closes database connection.
+    // May be called multiple times.
+    Close() error
     // Initialize prepares underlying database for migrations.
     Initialize() error
-    // Applied returns all applied migrations Describers.
-    Applied() ([]Describer, error)
     // Version returns the current database schema version.
-    // May return ErrNotInitialized if the underlying database is not
-    // prepared for migrations.
+    // Returns version 0 if migrations table is empty.
+    // Returns ErrNotInitialized if database is not prepared for migrations.
     Version() (int64, error)
     // Apply applies migration to the database.
-    Apply(Executor) error
+    Apply(Migrator) error
+    // Revert reverts migration.
+    Revert(Migrator) error
+    // Applied returns all applied migration Describers.
+    Applied() ([]Describer, error)
     // Creator returns migration file creator for given Driver.
     Creator() Creator
 }
@@ -66,8 +70,8 @@ type Describer interface {
     CreatedAt() time.Time
 }
 
-// The Executor interface is used to apply or revert given migration.
-type Executor interface {
+// The Migrator interface is used to apply or revert given migration.
+type Migrator interface {
     // Setup is called by migration manager before calling any other method.
     Setup(driver interface{}, createdAt time.Time)
     // Version returns migration version.
@@ -94,24 +98,24 @@ type Creator interface {
     CreateMigration(version int64) error
 }
 
-// The Executor interface provides methods to access
+// The Migrator interface provides methods to access
 // migrations for given database.
 //
 // Calls to Next and Previous provide a way
-// to move back and forth through migration list.
-//type Manager interface {
-//    // SetCurrent sets current database migration version.
-//    // Can be called at any time to reset the start point on the
-//    // migration list.
-//    SetCurrent(id int64) error
-//    // Current returns migration version which Executor currently points to.
-//    Current() int64
-//    // Next returns next migration to apply.
-//    // Next returns ErrNoMoreMigrations error if
-//    // there are no more migrations on the list.
-//    Next() (Executor, error)
-//    // Previous returns migration which preceded the current migration.
-//    // Previous returns ErrNoMoreMigrations error if the current migration is
-//    // first on the migrations list.
-//    Previous() (Executor, error)
-//}
+// to move back and forth through migration migs.
+type Manager interface {
+    // SetCurrent sets current database migration version.
+    // Can be called at any time to reset the start point on the
+    // migration migs.
+    SetCurrent(id int64) error
+    // Current returns migration version which Migrator currently points to.
+    Current() int64
+    // Next returns next migration to apply.
+    // Next returns ErrNoMoreMigrations error if
+    // there are no more migrations on the migs.
+    Next() (Migrator, error)
+    // Previous returns migration which preceded the current migration.
+    // Previous returns ErrNoMoreMigrations error if the current migration is
+    // first on the migrations migs.
+    Previous() (Migrator, error)
+}

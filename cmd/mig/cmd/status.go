@@ -1,13 +1,12 @@
 package cmd
 
 import (
-    "github.com/rzajac/mig/mig"
     "github.com/spf13/cobra"
 )
 
 var statusCmd = &cobra.Command{
-    Use:   "status [name]",
-    Short: "Display status of database migrations",
+    Use:   "status [target name]",
+    Short: "Display database migrations status for given target name",
     Args: func(cmd *cobra.Command, args []string) error {
         return nil
     },
@@ -16,7 +15,6 @@ var statusCmd = &cobra.Command{
         //if err != nil {
         //    return err
         //}
-        mig.List()
         return nil
     },
 }
