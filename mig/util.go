@@ -1,7 +1,6 @@
 package mig
 
 import (
-    "fmt"
     "os"
     "strconv"
     "text/template"
@@ -53,9 +52,4 @@ func fileExists(path string) (bool, error) {
     default:
         return !fi.IsDir(), nil
     }
-}
-
-// baseMigFileName returns base migration file name for given dialect.
-func baseMigFileName(dialect string) string {
-    return fmt.Sprintf("mig_%s.go", dialect)
 }

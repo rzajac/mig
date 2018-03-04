@@ -52,20 +52,20 @@ func (m *mysqlDriver) Revert(migration Migrator) error {
     return nil
 }
 
-func (m *mysqlDriver) Applied() ([]Describer, error) {
-    desc := make([]Describer, 0)
+func (m *mysqlDriver) Applied() ([]int64, error) {
+    var vers []int64
     rows, err := m.db.Query(mySQLGetApplied)
     switch {
     case err == sql.ErrNoRows:
-        return desc, nil
+        return vers, nil
     case err != nil:
         return nil, errors.WithStack(err)
     }
     defer rows.Close()
 
     for rows.Next() {
-        var r record
-        err := rows.Scan(&r.version, &r.info, &r.createdAt)
+        var v int64
+        err := rows.Scan(&version, &r.info, &r.createdAt)
         if err != nil {
             return nil, err
         }
@@ -94,12 +94,11 @@ func (m *mysqlDriver) Creator() Creator {
 // Create migrations table.
 var mySQLMigTableCreate = `CREATE TABLE migrations (
   version BIGINT UNSIGNED NOT NULL,
-  info VARCHAR(140) DEFAULT '',
-  created_at TIMESTAMP NULL DEFAULT NULL,
+  applied TIMESTAMP NOT NULL,
   PRIMARY KEY (version)
 ) ENGINE=InnoDB`
 
 // Select most recent migration version.
 var mySQLGetVersion = `SELECT version FROM migrations ORDER BY version DESC LIMIT 1`
 // Select applied migrations in descending order.
-var mySQLGetApplied = `SELECT version, info, created FROM migrations ORDER BY id ASC`
+var mySQLGetApplied = `SELECT version, applied FROM migrations ORDER BY id ASC`

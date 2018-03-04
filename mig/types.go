@@ -42,15 +42,13 @@ type Driver interface {
     Close() error
     // Initialize prepares underlying database for migrations.
     Initialize() error
-    // Version returns the current database schema version.
-    // Returns version 0 if migrations table is empty.
-    // Returns ErrNotInitialized if database is not prepared for migrations.
-    Version() (int64, error)
     // Apply applies migration to the database.
     Apply(Migrator) error
     // Revert reverts migration.
     Revert(Migrator) error
-    // Applied returns all applied migration Describers.
+    // Applied returns all applied migrations.
+    // The list is ordered starting with most recent migration.
+    // Returns ErrNotInitialized if database is not prepared for migrations.
     Applied() ([]Describer, error)
     // Creator returns migration file creator for given Driver.
     Creator() Creator
@@ -60,32 +58,21 @@ type Driver interface {
 type Describer interface {
     // Version returns migration version.
     Version() int64
-    // Current returns true if Describer is
-    // the current database migration version.
-    Current() bool
-    // Info returns short (140 characters max) migration description.
-    Info() string
-    // CreatedAt returns when migration has been applied.
+    // AppliedAt returns when migration has been applied.
     // It might return Zero date if the migration has not been applied.
-    CreatedAt() time.Time
+    AppliedAt() time.Time
 }
 
 // The Migrator interface is used to apply or revert given migration.
 type Migrator interface {
+    Describer
     // Setup is called by migration manager before calling any other method.
     Setup(driver interface{}, createdAt time.Time)
-    // Version returns migration version.
-    Version() int64
-    // CreatedAt returns when migration has been applied.
-    // It might return Zero date if the migration has not been applied.
-    CreatedAt() time.Time
     // Info returns short (140 characters max) migration description.
     Info() string
-    // Apply applies migration.
-    // Apply will set database migration version to value returned by Version().
+    // Apply applies migration to driver.
     Apply() error
     // Revert reverts migration.
-    // Revert will remove database migration version returned by Version().
     Revert() error
 }
 
