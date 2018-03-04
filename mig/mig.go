@@ -12,17 +12,17 @@ import (
 
 // A Mig is a migrations manager.
 type Mig struct {
-    cfg    Configurator
-    prv    DriverProvider
+    cfg    Configurer
+    prv    *DriverProvider
     migDir string
 }
 
 // NewMig returns new Mig instance.
-func NewMig(cfg Configurator) (*Mig, error) {
+func NewMig(cfg Configurer) (*Mig, error) {
     m := &Mig{
         cfg:    cfg,
-        prv:    NewProvider(cfg),
-        migDir: path.Join(cfg.BaseDir(), "migrations"),
+        prv:    NewDriverProvider(cfg),
+        migDir: path.Join(cfg.MigDir(), "migrations"),
     }
     return m, nil
 }
@@ -61,12 +61,12 @@ func (m *Mig) ensure() error {
     return nil
 }
 
-func (m *Mig)createMain() error {
+func (m *Mig) createMain() error {
     main := path.Join(m.migDir, "main.go")
     var data = struct {
         Names []string
     }{}
-    for _, n := range m.cfg.DbConfigs() {
+    for _, n := range m.cfg.Targets() {
         if ok, _ := isDir(path.Join(m.migDir, n)); ok {
             data.Names = append(data.Names, n)
         }

@@ -8,50 +8,47 @@ import (
     "gopkg.in/yaml.v2"
 )
 
-// NewYAMLConfigurator returns instance of YAML Configurator.
-func NewYAMLConfigurator(url string) (Configurator, error) {
+// yamlConfig represents YAML configuration file.
+type yamlConfig struct {
+    migDir   string
+    YTargets map[string]*target `yaml:"targets"`
+}
+
+// NewYAMLCfg loads configuration from YAML file and returns yamlConfig.
+func NewYAMLCfg(file string) (*yamlConfig, error) {
     var err error
     var data []byte
-    cfg := &yamlCfg{}
-    if data, err = ioutil.ReadFile(url); err != nil {
+    cfg := &yamlConfig{}
+    if data, err = ioutil.ReadFile(file); err != nil {
         return nil, errors.WithStack(err)
     }
     if err = yaml.UnmarshalStrict(data, cfg); err != nil {
         return nil, errors.WithStack(err)
     }
-    cfg.baseDir = path.Dir(url)
-    for n, db := range cfg.DBs {
+    cfg.migDir = path.Dir(file)
+    for n, db := range cfg.YTargets {
         db.name = n
-        db.migDir = path.Join(cfg.baseDir, "migrations", n)
+        db.migDir = path.Join(cfg.migDir, "migrations", n)
     }
     return cfg, nil
 }
 
-// yamlCfg represents YAML configuration file.
-type yamlCfg struct {
-    baseDir string
-    DBs     map[string]*dbConfig `yaml:"databases"`
+func (c *yamlConfig) MigDir() string {
+    return c.migDir
 }
 
-// BaseDir implements Configurator interface.
-func (c *yamlCfg) BaseDir() string {
-    return c.baseDir
-}
-
-// DbConfig implements Configurator interface.
-func (c *yamlCfg) DbConfig(name string) (DbConfigurator, error) {
-    db, ok := c.DBs[name]
+func (c *yamlConfig) Target(name string) (Target, error) {
+    db, ok := c.YTargets[name]
     if !ok {
         return nil, errors.Errorf("no database config named %s", name)
     }
     return db, nil
 }
 
-// DbConfigs implements Configurator interface.
-func (c *yamlCfg) DbConfigs() []string {
-    var names []string
-    for n := range c.DBs {
-        names = append(names, n)
+func (c *yamlConfig) Targets() ([]string) {
+    var t []string
+    for n := range c.YTargets {
+        t = append(t, n)
     }
-    return names
+    return t
 }
