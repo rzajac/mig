@@ -57,17 +57,17 @@ func (cr *mysqlCreator) path(version int64) string {
 }
 
 // MySQL migration file template.
-var mySQLMigTpl = template.Must(template.New("registered-mysqlDriver-struct-tpl").Parse(`package {{.Pkg}}
+var mySQLMigTpl = template.Must(template.New("registry-mysqlDriver-struct-tpl").Parse(`package {{.Pkg}}
 
 import (
     "database/sql"
     "time"
 
-    "github.com/rzajac/registered/registered"
+    "github.com/rzajac/mig/mig"
 )
 
 func init() {
-    registered.Register("setup", &Mig{{.Version}}{})
+    registry.Register("setup", &Mig{{.Version}}{})
 }
 
 type Mig{{.Version}} struct {

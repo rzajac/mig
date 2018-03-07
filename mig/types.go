@@ -8,6 +8,10 @@ import (
 var ErrNoMoreMigrations = errors.New("no more migrations")
 var ErrNotInitialized = errors.New("database not initialized")
 
+// MigRows represents map of applied migration versions
+// and when they were applied.
+type MigRows map[int64]time.Time
+
 // The Configurer interface is implemented by configuration providers.
 type Configurer interface {
     // MigDir returns absolute path to "migrations" directory.
@@ -49,25 +53,20 @@ type Driver interface {
     // Applied returns all applied migrations.
     // The list is ordered starting with most recent migration.
     // Returns ErrNotInitialized if database is not prepared for migrations.
-    Applied() ([]Describer, error)
+    Applied() (MigRows, error)
     // Creator returns migration file creator for given Driver.
     Creator() Creator
 }
 
-// Describer describes single migration.
-type Describer interface {
+// The Migrator interface is used to apply or revert given migration.
+type Migrator interface {
+    // Setup is called by migration manager before calling any other method.
+    Setup(driver interface{}, createdAt time.Time)
     // Version returns migration version.
     Version() int64
     // AppliedAt returns when migration has been applied.
     // It might return Zero date if the migration has not been applied.
     AppliedAt() time.Time
-}
-
-// The Migrator interface is used to apply or revert given migration.
-type Migrator interface {
-    Describer
-    // Setup is called by migration manager before calling any other method.
-    Setup(driver interface{}, createdAt time.Time)
     // Info returns short (140 characters max) migration description.
     Info() string
     // Apply applies migration to driver.

@@ -7,13 +7,13 @@ import (
 )
 
 // Registered migrations.
-var registered = &migrations{migs: make(map[string]migs)}
+var registry = &migrations{migs: make(map[string]migs, 0)}
 
 // Register registers Migrator.
 func Register(target string, mgr Migrator) {
-    registered.Lock()
-    defer registered.Unlock()
-    registered.migs[target] = append(registered.migs[target], mgr)
+    registry.Lock()
+    defer registry.Unlock()
+    registry.migs[target] = append(registry.migs[target], mgr)
 }
 
 // Slice of Migrators with Sorter interface.
@@ -38,16 +38,9 @@ func (m *migrations) sort() {
     }
 }
 
-// TODO
-//func (m *migrations) mark(target string, version int64) {
-//    for _, m := range registered.migs[target] {
-//        m.
-//    }
-//}
-
 // list lists migrations for given target.
 func (m *migrations) list(target string) {
-    for _, m := range registered.migs[target] {
+    for _, m := range registry.migs[target] {
         fmt.Println(target, m.Version())
     }
 }

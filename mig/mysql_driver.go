@@ -5,6 +5,7 @@ import (
 
     "github.com/go-sql-driver/mysql"
     "github.com/pkg/errors"
+    "time"
 )
 
 // mysqlDriver represents MySQL migration driver.
@@ -31,19 +32,6 @@ func (m *mysqlDriver) Close() error {
     return m.db.Close()
 }
 
-func (m *mysqlDriver) Version() (int64, error) {
-    var v int64
-    row := m.db.QueryRow(mySQLGetVersion)
-    err := row.Scan(&v)
-    if err == sql.ErrNoRows {
-        return 0, nil
-    }
-    if err, ok := err.(*mysql.MySQLError); ok && err.Number == 1146 {
-        return 0, ErrNotInitialized
-    }
-    return v, err
-}
-
 func (m *mysqlDriver) Apply(migration Migrator) error {
     return nil
 }
@@ -52,32 +40,34 @@ func (m *mysqlDriver) Revert(migration Migrator) error {
     return nil
 }
 
-func (m *mysqlDriver) Applied() ([]int64, error) {
-    var vers []int64
+func (m *mysqlDriver) Applied() (MigRows, error) {
+    migs := make(MigRows, 0)
     rows, err := m.db.Query(mySQLGetApplied)
     switch {
     case err == sql.ErrNoRows:
-        return vers, nil
+        return migs, nil
     case err != nil:
-        return nil, errors.WithStack(err)
+        if err, ok := err.(*mysql.MySQLError); ok && err.Number == 1146 {
+            return nil, ErrNotInitialized
+        } else {
+            return nil, errors.WithStack(err)
+        }
     }
     defer rows.Close()
 
     for rows.Next() {
         var v int64
-        err := rows.Scan(&version, &r.info, &r.createdAt)
+        var t time.Time
+        err := rows.Scan(&v, &t)
         if err != nil {
             return nil, err
         }
-        if len(desc) == 0 {
-            r.current = true
-        }
-        desc = append(desc, &r)
+        migs[v] = t
     }
     if err := rows.Err(); err != nil {
         return nil, errors.WithStack(err)
     }
-    return desc, nil
+    return migs, nil
 }
 
 func (m *mysqlDriver) Initialize() error {
@@ -98,7 +88,5 @@ var mySQLMigTableCreate = `CREATE TABLE migrations (
   PRIMARY KEY (version)
 ) ENGINE=InnoDB`
 
-// Select most recent migration version.
-var mySQLGetVersion = `SELECT version FROM migrations ORDER BY version DESC LIMIT 1`
 // Select applied migrations in descending order.
 var mySQLGetApplied = `SELECT version, applied FROM migrations ORDER BY id ASC`
