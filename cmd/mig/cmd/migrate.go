@@ -1,7 +1,6 @@
 package cmd
 
 import (
-    "github.com/pkg/errors"
     "github.com/rzajac/mig/mig"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
@@ -10,12 +9,7 @@ import (
 var migrateCmd = &cobra.Command{
     Use:   "migrate [target name]",
     Short: "Migrate target by name",
-    Args: func(cmd *cobra.Command, args []string) error {
-        if len(args) != 1 {
-            return errors.New("requires target name argument")
-        }
-        return nil
-    },
+    Args:  checkTarget,
     Run: func(cmd *cobra.Command, args []string) {
         m, err := mig.NewMigFromConfig(viper.ConfigFileUsed())
         if err != nil {

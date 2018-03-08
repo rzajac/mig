@@ -2,10 +2,10 @@ package mig
 
 import (
     "database/sql"
+    "time"
 
     "github.com/go-sql-driver/mysql"
     "github.com/pkg/errors"
-    "time"
 )
 
 // mysqlDriver represents MySQL migration driver.
@@ -89,4 +89,4 @@ var mySQLMigTableCreate = `CREATE TABLE migrations (
 ) ENGINE=InnoDB`
 
 // Select applied migrations in descending order.
-var mySQLGetApplied = `SELECT version, applied FROM migrations ORDER BY id ASC`
+var mySQLGetApplied = `SELECT version, applied FROM migrations ORDER BY version ASC`

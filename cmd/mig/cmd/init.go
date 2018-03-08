@@ -6,16 +6,16 @@ import (
     "github.com/spf13/viper"
 )
 
-var newCmd = &cobra.Command{
-    Use:   "new [target name]",
-    Short: "Create new migration for given target name",
+var initCmd = &cobra.Command{
+    Use:   "init [target name]",
+    Short: "Initialize target database",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
         m, err := mig.NewMigFromConfig(viper.ConfigFileUsed())
         if err != nil {
             return err
         }
-        if err := m.CreateMigration(args[0]); err != nil {
+        if err := m.Initialize(args[0]); err != nil {
             return err
         }
         return nil
@@ -23,5 +23,5 @@ var newCmd = &cobra.Command{
 }
 
 func init() {
-    rootCmd.AddCommand(newCmd)
+    rootCmd.AddCommand(initCmd)
 }

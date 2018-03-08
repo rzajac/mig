@@ -7,9 +7,7 @@ import (
 var statusCmd = &cobra.Command{
     Use:   "status [target name]",
     Short: "Display database migrations status for given target name",
-    Args: func(cmd *cobra.Command, args []string) error {
-        return nil
-    },
+    Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
         //m, err := mig.NewMigFromConfig(viper.ConfigFileUsed())
         //if err != nil {

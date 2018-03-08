@@ -4,6 +4,7 @@ import (
     "fmt"
     "sort"
     "sync"
+    "time"
 )
 
 // Registered migrations.
@@ -27,6 +28,24 @@ func (e migs) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 type migrations struct {
     sync.Mutex
     migs map[string]migs
+}
+
+// applyFromDb apply creation time and driver to migrations for given target.
+func (m *migrations) applyFromDb(drv interface{}, target string, rows MigRows) error {
+    for _, mgr := range m.migs[target] {
+        ver := mgr.Version()
+        t, ok := rows[ver]
+        if !ok {
+            t = time.Time{}
+        }
+        mgr.Setup(drv, t)
+    }
+    return nil
+}
+
+// validate validates migrations list.
+func (m *migrations) validate() error {
+    return nil
 }
 
 // sort sots all registered migrations.

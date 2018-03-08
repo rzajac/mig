@@ -77,3 +77,11 @@ func printErr(err error) {
         fmt.Fprintf(os.Stderr, "%+v\n", err)
     }
 }
+
+// checkTarget checks if the first parameter is a target name.
+func checkTarget(_ *cobra.Command, args []string) error {
+    if len(args) != 1 {
+        return errors.New("requires target name argument")
+    }
+    return nil
+}

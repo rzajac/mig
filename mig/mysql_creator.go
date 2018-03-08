@@ -67,7 +67,7 @@ import (
 )
 
 func init() {
-    registry.Register("setup", &Mig{{.Version}}{})
+    mig.Register("setup", &Mig{{.Version}}{})
 }
 
 type Mig{{.Version}} struct {
@@ -84,7 +84,7 @@ func (m *Mig{{.Version}}) Version() int64 {
     return {{.Version}}
 }
 
-func (m *Mig{{.Version}}) CreatedAt() time.Time {
+func (m *Mig{{.Version}}) AppliedAt() time.Time {
     return m.createdAt
 }
 
