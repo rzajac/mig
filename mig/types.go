@@ -44,6 +44,8 @@ type Driver interface {
     // Close closes database connection.
     // May be called multiple times.
     Close() error
+    // Drv returns concrete driver.
+    Drv() interface{}
     // Initialize prepares underlying database for migrations.
     Initialize() error
     // Apply applies migration to the database.

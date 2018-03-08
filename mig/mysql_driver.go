@@ -32,6 +32,10 @@ func (m *mysqlDriver) Close() error {
     return m.db.Close()
 }
 
+func (m *mysqlDriver) Drv() interface{} {
+    return m.db
+}
+
 func (m *mysqlDriver) Apply(migration Migrator) error {
     return nil
 }

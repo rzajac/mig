@@ -2,7 +2,6 @@ package mig
 
 import (
     "bytes"
-    "fmt"
     "io/ioutil"
     "path"
     "text/template"
@@ -79,16 +78,12 @@ func (m *Mig) Migrate(target string) error {
     if err != nil {
         return err
     }
-    registry.applyFromDb(drv, target, rows)
-    registry.sort()
-    if err := registry.validate(); err != nil {
+    if err := registry.applyFromDb(drv, target, rows); err != nil {
         return err
     }
-
-    //sortExecutors()
-    fmt.Println(v)
-    registry.list(target)
-
+    if err := registry.applyAll(target); err != nil {
+        return err
+    }
     return nil
 }
 

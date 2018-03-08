@@ -5,6 +5,8 @@ import (
     "sort"
     "sync"
     "time"
+
+    "github.com/pkg/errors"
 )
 
 // Registered migrations.
@@ -31,20 +33,41 @@ type migrations struct {
 }
 
 // applyFromDb apply creation time and driver to migrations for given target.
-func (m *migrations) applyFromDb(drv interface{}, target string, rows MigRows) error {
+func (m *migrations) applyFromDb(drv Driver, target string, rows MigRows) error {
+    if len(rows) > len(m.migs[target]) {
+        return errors.New("database has more migrations then filesystem")
+    }
     for _, mgr := range m.migs[target] {
         ver := mgr.Version()
         t, ok := rows[ver]
         if !ok {
             t = time.Time{}
         }
-        mgr.Setup(drv, t)
+        mgr.Setup(drv.Drv(), t)
+    }
+    m.sort()
+    if err := m.validate(target); err != nil {
+        return err
     }
     return nil
 }
 
-// validate validates migrations list.
-func (m *migrations) validate() error {
+// validate validates migrations list for given target.
+func (m *migrations) validate(target string) error {
+    // No migrations no possibility for error.
+    if len(m.migs[target]) == 0 {
+        return nil
+    }
+    prev := m.migs[target][0].AppliedAt().IsZero()
+    for _, mgr := range m.migs[target] {
+        curr := mgr.AppliedAt().IsZero()
+        switch {
+        case prev == false && curr == true:
+            return errors.New("migrations are not continuous")
+        default:
+            prev = curr
+        }
+    }
     return nil
 }
 
@@ -55,6 +78,18 @@ func (m *migrations) sort() {
     for _, m := range m.migs {
         sort.Sort(migs(m))
     }
+}
+
+func (m *migrations) applyAll(target string) error {
+    for _, mgr := range m.migs[target] {
+        if !mgr.AppliedAt().IsZero() {
+            continue
+        }
+        if err := mgr.Apply(); err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 // list lists migrations for given target.
