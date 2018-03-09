@@ -26,7 +26,7 @@ func NewMig(cfg Config) (*Mig, error) {
         migDir: path.Join(cfg.MigDir(), "migrations"),
     }
     // Sort all registered migrations.
-    registry.sort()
+    sortMigs()
     return m, nil
 }
 
@@ -80,13 +80,13 @@ func (m *Mig) Migrate(target string) error {
         return err
     }
     fmt.Println(v) // TODO: remove this
-    if err := drv.Merge(registry.migs[target]); err != nil {
+    if err := drv.Merge(migrations[target]); err != nil {
         return err
     }
-    if err := registry.validate(target); err != nil {
+    if err := validateMigs(target); err != nil {
         return err
     }
-    if err := registry.applyAll(target); err != nil {
+    if err := applyAllMigs(target); err != nil {
         return err
     }
     return nil
