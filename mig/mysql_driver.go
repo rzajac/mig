@@ -32,46 +32,62 @@ func (m *mysqlDriver) Close() error {
     return m.db.Close()
 }
 
-func (m *mysqlDriver) Drv() interface{} {
-    return m.db
+func (m *mysqlDriver) Version() (int64, error) {
+    var v int64
+    row := m.db.QueryRow(mySQLGetVersion)
+    err := row.Scan(&v)
+    if err == sql.ErrNoRows {
+        return 0, nil
+    }
+    if err, ok := err.(*mysql.MySQLError); ok && err.Number == 1146 {
+        return 0, ErrNotInitialized
+    }
+    return v, err
 }
 
-func (m *mysqlDriver) Apply(migration Migrator) error {
+func (m *mysqlDriver) Apply(migration Migration) error {
     return nil
 }
 
-func (m *mysqlDriver) Revert(migration Migrator) error {
+func (m *mysqlDriver) Revert(migration Migration) error {
     return nil
 }
 
-func (m *mysqlDriver) Applied() (MigRows, error) {
-    migs := make(MigRows, 0)
+func (m *mysqlDriver) Merge(migs []Migration) error {
+    ml := make(map[int64]time.Time, 0)
     rows, err := m.db.Query(mySQLGetApplied)
     switch {
     case err == sql.ErrNoRows:
-        return migs, nil
+        return nil
     case err != nil:
         if err, ok := err.(*mysql.MySQLError); ok && err.Number == 1146 {
-            return nil, ErrNotInitialized
+            return ErrNotInitialized
         } else {
-            return nil, errors.WithStack(err)
+            return errors.WithStack(err)
         }
     }
     defer rows.Close()
 
     for rows.Next() {
-        var v int64
         var t time.Time
+        var v int64
         err := rows.Scan(&v, &t)
         if err != nil {
-            return nil, err
+            return err
         }
-        migs[v] = t
+        ml[v] = t
     }
     if err := rows.Err(); err != nil {
-        return nil, errors.WithStack(err)
+        return errors.WithStack(err)
     }
-    return migs, nil
+    for _, mig := range migs {
+        t, ok := ml[mig.Version()]
+        if !ok {
+            t = time.Time{}
+        }
+        mig.Setup(m.db, t)
+    }
+    return nil
 }
 
 func (m *mysqlDriver) Initialize() error {
@@ -94,3 +110,5 @@ var mySQLMigTableCreate = `CREATE TABLE migrations (
 
 // Select applied migrations in descending order.
 var mySQLGetApplied = `SELECT version, applied FROM migrations ORDER BY version ASC`
+// Select most recent migration version.
+var mySQLGetVersion = `SELECT version FROM migrations ORDER BY version DESC LIMIT 1`

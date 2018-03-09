@@ -67,16 +67,16 @@ import (
 )
 
 func init() {
-    mig.Register("setup", &Mig{{.Version}}{})
+    mig.Register("{{.Pkg}}", &Mig{{.Version}}{})
 }
 
 type Mig{{.Version}} struct {
-    createdAt time.Time
+    appliedAt time.Time
     db        *sql.DB
 }
 
-func (m *Mig{{.Version}}) Setup(driver interface{}, createdAt time.Time) {
-    m.createdAt = createdAt
+func (m *Mig{{.Version}}) Setup(driver interface{}, appliedAt time.Time) {
+    m.appliedAt = appliedAt
     m.db = driver.(*sql.DB)
 }
 
@@ -85,7 +85,7 @@ func (m *Mig{{.Version}}) Version() int64 {
 }
 
 func (m *Mig{{.Version}}) AppliedAt() time.Time {
-    return m.createdAt
+    return m.appliedAt
 }
 
 // ======================= DO NOT EDIT ABOVE THIS LINE =======================

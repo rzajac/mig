@@ -6,11 +6,11 @@ const DialectMySQL = "mysql"
 
 // DriverProvider provides database drivers based on target names.
 type DriverProvider struct {
-    cfg Configurer
+    cfg Config
 }
 
 // NewDriverProvider returns new database driver provider.
-func NewDriverProvider(config Configurer) *DriverProvider {
+func NewDriverProvider(config Config) *DriverProvider {
     return &DriverProvider{
         cfg: config,
     }

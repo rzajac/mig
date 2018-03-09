@@ -8,11 +8,11 @@ func NewConfigLoader() *loader {
     return &loader{}
 }
 
-// Load loads Configurer based on url.
+// Load loads Config based on url.
 //
 // For now it only knows how to load local YAML configuration file.
 // In the future it will be able to load configuration from different sources
 // based on url.
-func (l *loader) Load(url string) (Configurer, error) {
+func (l *loader) Load(url string) (Config, error) {
     return NewYAMLCfg(url)
 }

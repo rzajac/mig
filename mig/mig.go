@@ -2,6 +2,7 @@ package mig
 
 import (
     "bytes"
+    "fmt"
     "io/ioutil"
     "path"
     "text/template"
@@ -12,13 +13,13 @@ import (
 
 // A Mig is a migrations manager.
 type Mig struct {
-    cfg    Configurer
+    cfg    Config
     prv    *DriverProvider
     migDir string
 }
 
 // NewMig returns new Mig instance.
-func NewMig(cfg Configurer) (*Mig, error) {
+func NewMig(cfg Config) (*Mig, error) {
     m := &Mig{
         cfg:    cfg,
         prv:    NewDriverProvider(cfg),
@@ -74,11 +75,15 @@ func (m *Mig) Migrate(target string) error {
     if err := m.ensureDb(drv); err != nil {
         return err
     }
-    rows, err := drv.Applied()
+    v, err := drv.Version()
     if err != nil {
         return err
     }
-    if err := registry.applyFromDb(drv, target, rows); err != nil {
+    fmt.Println(v) // TODO: remove this
+    if err := drv.Merge(registry.migs[target]); err != nil {
+        return err
+    }
+    if err := registry.validate(target); err != nil {
         return err
     }
     if err := registry.applyAll(target); err != nil {

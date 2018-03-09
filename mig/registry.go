@@ -4,7 +4,6 @@ import (
     "fmt"
     "sort"
     "sync"
-    "time"
 
     "github.com/pkg/errors"
 )
@@ -12,15 +11,15 @@ import (
 // Registered migrations.
 var registry = &migrations{migs: make(map[string]migs, 0)}
 
-// Register registers Migrator.
-func Register(target string, mgr Migrator) {
+// Register registers Migration.
+func Register(target string, mgr Migration) {
     registry.Lock()
     defer registry.Unlock()
     registry.migs[target] = append(registry.migs[target], mgr)
 }
 
 // Slice of Migrators with Sorter interface.
-type migs []Migrator
+type migs []Migration
 
 func (e migs) Len() int           { return len(e) }
 func (e migs) Less(i, j int) bool { return e[i].Version() < e[j].Version() }
@@ -30,26 +29,6 @@ func (e migs) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 type migrations struct {
     sync.Mutex
     migs map[string]migs
-}
-
-// applyFromDb apply creation time and driver to migrations for given target.
-func (m *migrations) applyFromDb(drv Driver, target string, rows MigRows) error {
-    if len(rows) > len(m.migs[target]) {
-        return errors.New("database has more migrations then filesystem")
-    }
-    for _, mgr := range m.migs[target] {
-        ver := mgr.Version()
-        t, ok := rows[ver]
-        if !ok {
-            t = time.Time{}
-        }
-        mgr.Setup(drv.Drv(), t)
-    }
-    m.sort()
-    if err := m.validate(target); err != nil {
-        return err
-    }
-    return nil
 }
 
 // validate validates migrations list for given target.
