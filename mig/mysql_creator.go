@@ -43,7 +43,7 @@ func (cr *mysqlCreator) CreateMigration(version int64) error {
     return nil
 }
 
-// ensureFs ensures everything is ready to create migration files.
+// ensure ensures everything is ready to create migration files.
 func (cr *mysqlCreator) ensure() error {
     if err := checkCreateDir(cr.target.MigDir()); err != nil {
         return err

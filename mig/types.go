@@ -86,19 +86,19 @@ type Creator interface {
 //
 // Calls to Next and Previous provide a way
 // to move back and forth through migration migSort.
-type Manager interface {
-    // SetCurrent sets current database migration version.
-    // Can be called at any time to reset the start point on the
-    // migration migSort.
-    SetCurrent(id int64) error
-    // Current returns migration version which Migration currently points to.
-    Current() int64
-    // Next returns next migration to apply.
-    // Next returns ErrNoMoreMigrations error if
-    // there are no more migrations on the migSort.
-    Next() (Migration, error)
-    // Previous returns migration which preceded the current migration.
-    // Previous returns ErrNoMoreMigrations error if the current migration is
-    // first on the migrations migSort.
-    Previous() (Migration, error)
-}
+//type Manager interface {
+//    // SetCurrent sets current database migration version.
+//    // Can be called at any time to reset the start point on the
+//    // migration migSort.
+//    SetCurrent(id int64) error
+//    // Current returns migration version which Migration currently points to.
+//    Current() int64
+//    // Next returns next migration to apply.
+//    // Next returns ErrNoMoreMigrations error if
+//    // there are no more migrations on the migSort.
+//    Next() (Migration, error)
+//    // Previous returns migration which preceded the current migration.
+//    // Previous returns ErrNoMoreMigrations error if the current migration is
+//    // first on the migrations migSort.
+//    Previous() (Migration, error)
+//}

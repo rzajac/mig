@@ -7,6 +7,7 @@ import (
     "os"
 
     "github.com/pkg/errors"
+    "github.com/rzajac/mig/mig"
     "github.com/rzajac/mig/version"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
@@ -37,6 +38,15 @@ func Execute() {
     if err := rootCmd.Execute(); err != nil {
         os.Exit(1)
     }
+}
+
+// NewMigFromConfig instantiates new Mig based on provided config path.
+func NewMigFromConfig(path string) (*mig.Mig, error) {
+    cfg, err := mig.NewConfigLoader().Load(path)
+    if err != nil {
+        return nil, err
+    }
+    return mig.NewMig(cfg)
 }
 
 // loadConfig reads in config file.

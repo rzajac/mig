@@ -30,15 +30,6 @@ func NewMig(cfg Config) (*Mig, error) {
     return m, nil
 }
 
-// NewMigFromConfig instantiates new Mig based on provided config path.
-func NewMigFromConfig(path string) (*Mig, error) {
-    cfg, err := NewConfigLoader().Load(path)
-    if err != nil {
-        return nil, err
-    }
-    return NewMig(cfg)
-}
-
 // CreateMigration creates new migration file for given target name.
 func (m *Mig) CreateMigration(target string) error {
     drv, err := m.prv.Driver(target)

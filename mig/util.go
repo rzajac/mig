@@ -9,11 +9,6 @@ import (
     "github.com/pkg/errors"
 )
 
-// Template function map.
-var tplFnMap = template.FuncMap{
-    "fTime": func(t time.Time) string { return strconv.FormatInt(t.UnixNano(), 10) },
-}
-
 // checkCreateDir creates directory if doesn't exist.
 func checkCreateDir(path string) error {
     ok, err := isDir(path)

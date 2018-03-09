@@ -11,7 +11,7 @@ var initCmd = &cobra.Command{
     Short: "Initialize target database",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := mig.NewMigFromConfig(viper.ConfigFileUsed())
+        m, err := NewMigFromConfig(viper.ConfigFileUsed())
         if err != nil {
             return err
         }

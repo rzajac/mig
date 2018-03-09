@@ -10,7 +10,7 @@ import (
 
 // yamlConfig represents YAML configuration file.
 type yamlConfig struct {
-    migDir   string
+    dir      string
     YTargets map[string]*target `yaml:"targets"`
 }
 
@@ -25,16 +25,16 @@ func NewYAMLCfg(file string) (*yamlConfig, error) {
     if err = yaml.UnmarshalStrict(data, cfg); err != nil {
         return nil, errors.WithStack(err)
     }
-    cfg.migDir = path.Dir(file)
+    cfg.dir = path.Dir(file)
     for n, db := range cfg.YTargets {
         db.name = n
-        db.migDir = path.Join(cfg.migDir, "migrations", n)
+        db.dir = path.Join(cfg.dir, "migrations", n)
     }
     return cfg, nil
 }
 
 func (c *yamlConfig) MigDir() string {
-    return c.migDir
+    return c.dir
 }
 
 func (c *yamlConfig) Target(name string) (Target, error) {
