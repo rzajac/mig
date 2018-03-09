@@ -2,9 +2,6 @@ package mig
 
 import (
     "os"
-    "strconv"
-    "text/template"
-    "time"
 
     "github.com/pkg/errors"
 )

@@ -58,7 +58,7 @@ func (m *Mig) Initialize(target string) error {
     return drv.Initialize()
 }
 
-func (m *Mig) Migrate(target string) error {
+func (m *Mig) Migrate(target string, to int64) error {
     drv, err := m.prv.Driver(target)
     if err != nil {
         return err

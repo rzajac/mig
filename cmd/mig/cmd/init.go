@@ -1,7 +1,6 @@
 package cmd
 
 import (
-    "github.com/rzajac/mig/mig"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
 )

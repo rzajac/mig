@@ -1,7 +1,6 @@
 package cmd
 
 import (
-    "github.com/rzajac/mig/mig"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
 )
@@ -16,7 +15,7 @@ var migrateCmd = &cobra.Command{
             printErr(err)
             return
         }
-        if err := m.Migrate(args[0]); err != nil {
+        if err := m.Migrate(args[0], 0); err != nil {
             printErr(err)
             return
         }
