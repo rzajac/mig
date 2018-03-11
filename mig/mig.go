@@ -5,97 +5,93 @@ import (
     "fmt"
     "io/ioutil"
     "path"
+    "sort"
     "text/template"
     "time"
 
     "github.com/pkg/errors"
 )
 
+// Registered migrations.
+var migrations = make(map[string][]Migration)
+
+// Register registers Migration.
+func Register(target string, migration Migration) {
+    migrations[target] = append(migrations[target], migration)
+}
+
 // A Mig is a migrations manager.
 type Mig struct {
     cfg    Config
-    prv    *DriverProvider
+    driver Driver
     migDir string
+    target string
 }
 
 // NewMig returns new Mig instance.
-func NewMig(cfg Config) (*Mig, error) {
-    m := &Mig{
-        cfg:    cfg,
-        prv:    NewDriverProvider(cfg),
-        migDir: path.Join(cfg.MigDir(), "migrations"),
+func NewMig(cfg Config, target string) (*Mig, error) {
+    // Make sure migrations directory exist.
+    migDir := path.Join(cfg.MigDir(), "migrations")
+    if err := checkCreateDir(migDir); err != nil {
+        return nil, err
     }
     // Sort all registered migrations.
-    sortMigs()
+    for _, mgr := range migrations {
+        sort.Sort(migSort(mgr))
+    }
+    // Get driver for selected target.
+    driver, err := NewDriverProvider(cfg).Driver(target)
+    if err != nil {
+        return nil, err
+    }
+    // Merge filesystem an database info about migrations for given target.
+    if err := driver.Merge(migrations[target]); err != nil {
+        return nil, err
+    }
+    m := &Mig{
+        cfg:    cfg,
+        driver: driver,
+        target: target,
+        migDir: migDir,
+    }
+    // Validate migrations.
+    if err := m.validateMigs(); err != nil {
+        return nil, err
+    }
     return m, nil
 }
 
 // CreateMigration creates new migration file for given target name.
-func (m *Mig) CreateMigration(target string) error {
-    drv, err := m.prv.Driver(target)
-    if err != nil {
-        return err
-    }
-    if err := m.ensureFs(); err != nil {
-        return err
-    }
+func (m *Mig) CreateMigration() error {
     version := time.Now().UnixNano()
-    if err := drv.Creator().CreateMigration(version); err != nil {
+    if err := m.driver.Creator().CreateMigration(version); err != nil {
         return err
     }
     m.createMain()
     return nil
 }
 
-func (m *Mig) Initialize(target string) error {
-    drv, err := m.prv.Driver(target)
-    if err != nil {
-        return err
-    }
-    if err := m.ensureDb(drv); err != nil {
-        return err
-    }
-    return drv.Initialize()
+func (m *Mig) Initialize() error {
+    return m.driver.Initialize()
 }
 
-func (m *Mig) Migrate(target string, to int64) error {
-    drv, err := m.prv.Driver(target)
-    if err != nil {
-        return err
-    }
-    if err := m.ensureDb(drv); err != nil {
-        return err
-    }
-    v, err := drv.Version()
+// Migrate migrates database target to specific version.
+// If version is -1 it will migrate database to latest version.
+func (m *Mig) Migrate(to int64) error {
+    v, err := m.driver.Version()
     if err != nil {
         return err
     }
     fmt.Println(v) // TODO: remove this
-    if err := drv.Merge(migrations[target]); err != nil {
-        return err
-    }
-    if err := validateMigs(target); err != nil {
-        return err
-    }
-    if err := applyAllMigs(target); err != nil {
-        return err
-    }
     return nil
 }
 
-// ensureFs ensures directory structure is ready for migration files.
-func (m *Mig) ensureFs() error {
-    if err := checkCreateDir(m.migDir); err != nil {
+func (m *Mig) Status() error {
+    v, err := m.driver.Version()
+    if err != nil {
         return err
     }
-    return nil
-}
-
-// ensureDb ensures database driver is initialized for migrations.
-func (m *Mig) ensureDb(drv Driver) error {
-    if err := drv.Open(); err != nil {
-        return err
-    }
+    fmt.Println(v) // TODO: remove this
     return nil
 }
 
@@ -116,6 +112,25 @@ func (m *Mig) createMain() error {
     }
     if err := ioutil.WriteFile(main, buf.Bytes(), 0666); err != nil {
         return errors.WithStack(err)
+    }
+    return nil
+}
+
+// validateMigs validates migrations list for given target.
+func (m *Mig) validateMigs() error {
+    // No migrations no possibility for error.
+    if len(migrations[m.target]) == 0 {
+        return nil
+    }
+    prev := migrations[m.target][0].AppliedAt().IsZero()
+    for _, mgr := range migrations[m.target] {
+        curr := mgr.AppliedAt().IsZero()
+        switch {
+        case prev == false && curr == true:
+            return errors.New("migrations are not continuous")
+        default:
+            prev = curr
+        }
     }
     return nil
 }

@@ -10,11 +10,11 @@ var newCmd = &cobra.Command{
     Short: "Create new migration for given target name",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := NewMigFromConfig(viper.ConfigFileUsed())
+        m, err := NewMigFromConfig(viper.ConfigFileUsed(), args[0])
         if err != nil {
             return err
         }
-        if err := m.CreateMigration(args[0]); err != nil {
+        if err := m.CreateMigration(); err != nil {
             return err
         }
         return nil

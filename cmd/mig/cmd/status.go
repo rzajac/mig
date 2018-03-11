@@ -2,6 +2,7 @@ package cmd
 
 import (
     "github.com/spf13/cobra"
+    "github.com/spf13/viper"
 )
 
 var statusCmd = &cobra.Command{
@@ -9,10 +10,13 @@ var statusCmd = &cobra.Command{
     Short: "Display database migrations status for given target name",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        //m, err := mig.NewMigFromConfig(viper.ConfigFileUsed())
-        //if err != nil {
-        //    return err
-        //}
+        m, err := NewMigFromConfig(viper.ConfigFileUsed(), args[0])
+        if err != nil {
+            return err
+        }
+        if err := m.Status(); err != nil {
+            return err
+        }
         return nil
     },
 }

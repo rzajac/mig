@@ -10,12 +10,12 @@ var migrateCmd = &cobra.Command{
     Short: "Migrate target by name",
     Args:  checkTarget,
     Run: func(cmd *cobra.Command, args []string) {
-        m, err := NewMigFromConfig(viper.ConfigFileUsed())
+        m, err := NewMigFromConfig(viper.ConfigFileUsed(), args[0])
         if err != nil {
             printErr(err)
             return
         }
-        if err := m.Migrate(args[0], 0); err != nil {
+        if err := m.Migrate(0); err != nil {
             printErr(err)
             return
         }

@@ -41,12 +41,12 @@ func Execute() {
 }
 
 // NewMigFromConfig instantiates new Mig based on provided config path.
-func NewMigFromConfig(path string) (*mig.Mig, error) {
-    cfg, err := mig.NewConfigLoader().Load(path)
+func NewMigFromConfig(path, target string) (*mig.Mig, error) {
+    cfg, err := mig.NewYAMLCfg(path)
     if err != nil {
         return nil, err
     }
-    return mig.NewMig(cfg)
+    return mig.NewMig(cfg, target)
 }
 
 // loadConfig reads in config file.

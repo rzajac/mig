@@ -16,7 +16,7 @@ func NewDriverProvider(config Config) *DriverProvider {
     }
 }
 
-// Driver returns database driver for given target name.
+// Driver returns ready to use database driver for given target name.
 func (dp *DriverProvider) Driver(targetName string) (Driver, error) {
     c, err := dp.cfg.Target(targetName)
     if err != nil {
@@ -24,7 +24,8 @@ func (dp *DriverProvider) Driver(targetName string) (Driver, error) {
     }
     switch c.Dialect() {
     case DialectMySQL:
-        return newMYSQLDriver(c), nil
+        drv := newMYSQLDriver(c)
+        return drv, drv.Open()
     default:
         return nil, errors.Errorf("unknown dialect: %s", c.Dialect())
     }
