@@ -13,10 +13,10 @@ type Config interface {
     // In another words it returns absolute path to directory
     // where all target directories are being created.
     MigDir() string
-    // Target returns migration target by name.
-    Target(name string) (Target, error)
-    // Targets returns all migration target names.
-    Targets() []string
+    // Driver returns ready to use database driver for given target name.
+    Driver(name string) (Driver, error)
+    // TargetNames returns all migration target names.
+    TargetNames() []string
 }
 
 // The Target interface is implemented by target configuration providers.

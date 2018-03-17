@@ -101,7 +101,7 @@ func (m *Mig) createMain() error {
     var data = struct {
         Names []string
     }{}
-    for _, n := range m.cfg.Targets() {
+    for _, n := range m.cfg.TargetNames() {
         if ok, _ := isDir(path.Join(m.migDir, n)); ok {
             data.Names = append(data.Names, n)
         }
