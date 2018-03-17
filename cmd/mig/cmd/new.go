@@ -2,15 +2,14 @@ package cmd
 
 import (
     "github.com/spf13/cobra"
-    "github.com/spf13/viper"
 )
 
 var newCmd = &cobra.Command{
-    Use:   "new [target name]",
-    Short: "Create new migration for given target name",
+    Use:   "new [target]",
+    Short: "Create new migration for given target",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := NewMigFromConfig(viper.ConfigFileUsed(), args[0])
+        m, err := NewMigFromConfig(cfgFile, args[0])
         if err != nil {
             return err
         }

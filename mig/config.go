@@ -5,6 +5,7 @@ import (
     "path"
 
     "github.com/pkg/errors"
+    "github.com/spf13/afero"
     "gopkg.in/yaml.v2"
 )
 

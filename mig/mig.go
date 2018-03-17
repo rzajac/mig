@@ -22,10 +22,10 @@ func Register(target string, migration Migration) {
 
 // A Mig is a migrations manager.
 type Mig struct {
-    cfg    Config
-    driver Driver
-    migDir string
-    target string
+    driver  Driver
+    dir     string
+    target  string
+    targets []string
 }
 
 // NewMig returns new Mig instance.
@@ -40,19 +40,19 @@ func NewMig(cfg Config, target string) (*Mig, error) {
         sort.Sort(migSort(mgr))
     }
     // Get driver for selected target.
-    driver, err := NewDriverProvider(cfg).Driver(target)
+    driver, err := cfg.Driver(target)
     if err != nil {
         return nil, err
     }
-    // Merge filesystem an database info about migrations for given target.
+    // Merge filesystem and database migrations info for given target.
     if err := driver.Merge(migrations[target]); err != nil {
         return nil, err
     }
     m := &Mig{
-        cfg:    cfg,
-        driver: driver,
-        target: target,
-        migDir: migDir,
+        driver:  driver,
+        target:  target,
+        targets: cfg.TargetNames(),
+        dir:     migDir,
     }
     // Validate migrations.
     if err := m.validateMigs(); err != nil {
@@ -97,12 +97,12 @@ func (m *Mig) Status() error {
 
 // createMain creates main.go.
 func (m *Mig) createMain() error {
-    main := path.Join(m.migDir, "main.go")
+    main := path.Join(m.dir, "main.go")
     var data = struct {
         Names []string
     }{}
-    for _, n := range m.cfg.TargetNames() {
-        if ok, _ := isDir(path.Join(m.migDir, n)); ok {
+    for _, n := range m.targets {
+        if ok, _ := isDir(path.Join(m.dir, n)); ok {
             data.Names = append(data.Names, n)
         }
     }

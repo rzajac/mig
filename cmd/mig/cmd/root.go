@@ -60,6 +60,7 @@ func loadConfig() {
     if err := viper.ReadInConfig(); err != nil {
         log.Fatal(err)
     }
+    cfgFile = viper.ConfigFileUsed()
 }
 
 // getVersion returns JSON formatted application version.

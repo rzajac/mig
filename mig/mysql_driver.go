@@ -98,7 +98,7 @@ func (m *mysqlDriver) Initialize() error {
 }
 
 func (m *mysqlDriver) Creator() Creator {
-    return newMySQLCreator(m.target)
+    return &mysqlCreator{target: m.target}
 }
 
 // Create migrations table.

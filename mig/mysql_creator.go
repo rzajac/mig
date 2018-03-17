@@ -15,15 +15,8 @@ type mysqlCreator struct {
     target Target
 }
 
-// newMySQLCreator returns new mysqlCreator based on target.
-func newMySQLCreator(target Target) *mysqlCreator {
-    return &mysqlCreator{
-        target: target,
-    }
-}
-
 func (cr *mysqlCreator) CreateMigration(version int64) error {
-    if err := cr.ensure(); err != nil {
+    if err := checkCreateDir(cr.target.MigDir()); err != nil {
         return err
     }
     var data = struct {
@@ -33,6 +26,7 @@ func (cr *mysqlCreator) CreateMigration(version int64) error {
         Pkg:     cr.target.Name(),
         Version: version,
     }
+
     var buf bytes.Buffer
     if err := mySQLMigTpl.Execute(&buf, data); err != nil {
         return errors.WithStack(err)
@@ -43,21 +37,13 @@ func (cr *mysqlCreator) CreateMigration(version int64) error {
     return nil
 }
 
-// ensure ensures everything is ready to create migration files.
-func (cr *mysqlCreator) ensure() error {
-    if err := checkCreateDir(cr.target.MigDir()); err != nil {
-        return err
-    }
-    return nil
-}
-
 // path returns absolute path to migration file with given version.
 func (cr *mysqlCreator) path(version int64) string {
     return path.Join(cr.target.MigDir(), fmt.Sprintf("%d.go", version))
 }
 
 // MySQL migration file template.
-var mySQLMigTpl = template.Must(template.New("registry-mysqlDriver-struct-tpl").Parse(`package {{.Pkg}}
+var mySQLMigTpl = template.Must(template.New("mysql-mig-tpl").Parse(`package {{.Pkg}}
 
 import (
     "database/sql"

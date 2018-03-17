@@ -1,0 +1,20 @@
+# Migrations directory name.
+dir: migrations
+
+# List of migration targets.
+#
+# Target names uniquely identify target configuration
+# and are used as package names when generating migration files.
+#
+# Target must specify:
+#   dialect - which identifies database driver for the target.
+#   dsn - which is Data Source Name for given target database.
+#
+targets:
+  setup:
+    dialect: mysql
+    dsn: mig:super_secret@tcp(localhost:3306)/mig_test
+
+  auth:
+    dialect: mysql
+    dsn: mig:super_secret@tcp(localhost:3306)/mig_test2
