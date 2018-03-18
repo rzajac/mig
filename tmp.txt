@@ -1,0 +1,26 @@
+func (cr *mysqlCreator) CreateMigration(fs afero.Fs, version int64) error {
+    if err := checkCreateDir(fs, cr.target.MigDir()); err != nil {
+        return err
+    }
+    var data = struct {
+        Pkg     string
+        Version int64
+    }{
+        Pkg:     cr.target.Name(),
+        Version: version,
+    }
+
+    var buf bytes.Buffer
+    if err := mySQLMigTpl.Execute(&buf, data); err != nil {
+        return errors.WithStack(err)
+    }
+    if err := afero.WriteFile(fs, cr.path(version), buf.Bytes(), 0666); err != nil {
+        return errors.WithStack(err)
+    }
+    return nil
+}
+
+// path returns absolute path to migration file with given version.
+func (cr *mysqlCreator) path(version int64) string {
+    return path.Join(cr.target.MigDir(), fmt.Sprintf("%d.go", version))
+}

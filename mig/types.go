@@ -6,29 +6,27 @@ import (
 )
 
 var ErrNotInitialized = errors.New("database not initialized")
+var ErrUnknownTarget = errors.New("unknown target")
 
 // The Config interface is implemented by configuration providers.
 type Config interface {
-    // MigDir returns absolute path to "migrations" directory.
-    // In another words it returns absolute path to directory
-    // where all target directories are being created.
+    // MigDir returns absolute path to migrations directory.
     MigDir() string
-    // Driver returns ready to use database driver for given target name.
-    Driver(name string) (Driver, error)
-    // TargetNames returns all migration target names.
-    TargetNames() []string
+    // Target returns migration target by name.
+    // Returns ErrUnknownTarget if target name does not exist.
+    Target(name string) (Target, error)
 }
 
 // The Target interface is implemented by target configuration providers.
 type Target interface {
     // Name returns target name.
     Name() string
-    // MigDir returns absolute directory path where migrations must be put.
-    MigDir() string
-    // Dialect returns target database dialect.
-    Dialect() string
-    // Dsn returns Database Source Name string for the target.
-    Dsn() string
+    // TargetDir returns absolute path to a directory where target migrations are.
+    TargetDir() string
+    // CreateMigration creates migration file.
+    CreateMigration(version int64) error
+    // Migrate migrates target to latest version.
+    Migrate() error
 }
 
 // Driver represents database driver.
@@ -51,8 +49,8 @@ type Driver interface {
     // Version returns current database migration version.
     // Returns ErrNotInitialized if database is not prepared for migrations.
     Version() (int64, error)
-    // Creator returns migration file creator for given Driver.
-    Creator() Creator
+    // GenMigration generates migration file.
+    GenMigration(version int64) ([]byte, error)
 }
 
 // The Migration interface is implemented by database migrations.
@@ -70,13 +68,4 @@ type Migration interface {
     Apply() error
     // Revert reverts migration.
     Revert() error
-}
-
-// The Creator interface is used to create migration files.
-type Creator interface {
-    // CreateMigration creates migration file.
-    //
-    // If the migrations directory or base migration file doesn't exist
-    // CreateMigration will first create them.
-    CreateMigration(version int64) error
 }

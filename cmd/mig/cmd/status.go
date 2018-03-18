@@ -9,7 +9,7 @@ var statusCmd = &cobra.Command{
     Short: "Display database migrations status for given target name",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := NewMigFromConfig(cfgFile, args[0])
+        m, err := NewMigFromConfig(fs, cfgFile, args[0])
         if err != nil {
             return err
         }

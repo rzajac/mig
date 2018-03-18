@@ -9,7 +9,7 @@ var initCmd = &cobra.Command{
     Short: "Initialize target database",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := NewMigFromConfig(cfgFile, args[0])
+        m, err := NewMigFromConfig(fs, cfgFile, args[0])
         if err != nil {
             return err
         }

@@ -9,7 +9,7 @@ var newCmd = &cobra.Command{
     Short: "Create new migration for given target",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := NewMigFromConfig(cfgFile, args[0])
+        m, err := NewMigFromConfig(fs, cfgFile, args[0])
         if err != nil {
             return err
         }

@@ -1,7 +1,6 @@
 package mig
 
 import (
-    "io/ioutil"
     "path"
 
     "github.com/pkg/errors"
@@ -14,27 +13,28 @@ const DialectMySQL = "mysql"
 
 // config represents YAML configuration file.
 type config struct {
-    Dir     string             `yaml:"dir"`     // Absolute migrations path.
-    Targets map[string]*target `yaml:"targets"` // List of defined targets.
+    fs  afero.Fs
+    Dir string `yaml:"dir"` // Absolute migrations path.
+    Targets map[string]*struct {
+        Dialect string `yaml:"dialect"` // Database dialect.
+        Dsn     string `yaml:"dsn"`     // Database connection string.
+    } `yaml:"targets"`      // List of defined targets.
 }
 
-// NewYAMLCfg loads YAML configuration.
-func NewYAMLCfg(file string) (*config, error) {
-    content, err := ioutil.ReadFile(file)
+// NewConfig loads YAML configuration.
+func NewConfig(fs afero.Fs, configPath string) (*config, error) {
+    content, err := afero.ReadFile(fs, configPath)
     if err != nil {
         return nil, errors.WithStack(err)
     }
 
-    cfg := &config{}
+    cfg := &config{fs: fs}
     if err = yaml.UnmarshalStrict(content, cfg); err != nil {
         return nil, errors.WithStack(err)
     }
-
-    filePath := path.Dir(file)
-    for name, target := range cfg.Targets {
-        target.name = name
-        target.dir = path.Join(filePath, cfg.Dir, name)
-    }
+    // In config we get only directory name.
+    // Here we set it as absolute and relative to configuration path.
+    cfg.Dir = path.Join(path.Dir(configPath), cfg.Dir)
     return cfg, nil
 }
 
@@ -42,48 +42,18 @@ func (c *config) MigDir() string {
     return c.Dir
 }
 
-func (c *config) Driver(target string) (Driver, error) {
-    trg, ok := c.Targets[target]
+func (c *config) Target(trgName string) (Target, error) {
+    trgCfg, ok := c.Targets[trgName]
     if !ok {
-        return nil, errors.Errorf("no database target named %s", target)
+        return nil, ErrUnknownTarget
     }
-    switch trg.Dialect() {
+
+    var drv Driver
+    switch trgCfg.Dialect {
     case DialectMySQL:
-        drv := newMYSQLDriver(trg)
-        return drv, drv.Open()
+        drv = newMYSQLDriver(trgName, trgCfg.Dsn)
     default:
-        return nil, errors.Errorf("unknown dialect: %s", trg.Dialect())
+        return nil, errors.Errorf("unknown dialect: %s", trgCfg.Dialect)
     }
-}
-
-func (c *config) TargetNames() ([]string) {
-    var t []string
-    for n := range c.Targets {
-        t = append(t, n)
-    }
-    return t
-}
-
-// target represents configuration of the migration target.
-type target struct {
-    name      string                  // Target name.
-    dir       string                  // Absolute path to migrations directory.
-    DbDialect string `yaml:"dialect"` // Database dialect.
-    DbDsn     string `yaml:"dsn"`     // Database connection string.
-}
-
-func (t *target) Dialect() string {
-    return t.DbDialect
-}
-
-func (t *target) Dsn() string {
-    return t.DbDsn
-}
-
-func (t *target) Name() string {
-    return t.name
-}
-
-func (t *target) MigDir() string {
-    return t.dir
+    return NewTarget(c.fs, path.Join(c.Dir, trgName), drv, GetMigrations(trgName))
 }

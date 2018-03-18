@@ -1,7 +1,9 @@
 package mig
 
 import (
+    "bytes"
     "database/sql"
+    "text/template"
     "time"
 
     "github.com/go-sql-driver/mysql"
@@ -10,13 +12,14 @@ import (
 
 // mysqlDriver represents MySQL migration driver.
 type mysqlDriver struct {
-    target Target
-    db     *sql.DB
+    name string
+    dsn  string
+    db   *sql.DB
 }
 
 // newMYSQLDriver returns new instance of mysqlDriver.
-func newMYSQLDriver(config Target) *mysqlDriver {
-    return &mysqlDriver{target: config}
+func newMYSQLDriver(name, dsn string) *mysqlDriver {
+    return &mysqlDriver{name: name, dsn: dsn}
 }
 
 func (m *mysqlDriver) Open() error {
@@ -24,7 +27,7 @@ func (m *mysqlDriver) Open() error {
         return nil
     }
     var err error
-    m.db, err = sql.Open("mysql", m.target.Dsn())
+    m.db, err = sql.Open("mysql", m.dsn)
     return err
 }
 
@@ -97,8 +100,20 @@ func (m *mysqlDriver) Initialize() error {
     return nil
 }
 
-func (m *mysqlDriver) Creator() Creator {
-    return &mysqlCreator{target: m.target}
+func (m *mysqlDriver) GenMigration(version int64) ([]byte, error) {
+    var data = struct {
+        Pkg     string
+        Version int64
+    }{
+        Pkg:     m.name,
+        Version: version,
+    }
+
+    var buf bytes.Buffer
+    if err := mySQLMigTpl.Execute(&buf, data); err != nil {
+        return []byte{}, errors.WithStack(err)
+    }
+    return buf.Bytes(), nil
 }
 
 // Create migrations table.
@@ -112,3 +127,52 @@ var mySQLMigTableCreate = `CREATE TABLE migrations (
 var mySQLGetApplied = `SELECT version, applied FROM migrations ORDER BY version ASC`
 // Select most recent migration version.
 var mySQLGetVersion = `SELECT version FROM migrations ORDER BY version DESC LIMIT 1`
+
+// MySQL migration file template.
+var mySQLMigTpl = template.Must(template.New("mysql-mig-tpl").Parse(`package {{.Pkg}}
+
+import (
+    "database/sql"
+    "time"
+
+    "github.com/rzajac/mig/mig"
+)
+
+func init() {
+    mig.Register("{{.Pkg}}", &Mig{{.Version}}{})
+}
+
+type Mig{{.Version}} struct {
+    appliedAt time.Time
+    db        *sql.DB
+}
+
+func (m *Mig{{.Version}}) Setup(driver interface{}, appliedAt time.Time) {
+    m.appliedAt = appliedAt
+    m.db = driver.(*sql.DB)
+}
+
+func (m *Mig{{.Version}}) Version() int64 {
+    return {{.Version}}
+}
+
+func (m *Mig{{.Version}}) AppliedAt() time.Time {
+    return m.appliedAt
+}
+
+// ======================= DO NOT EDIT ABOVE THIS LINE =======================
+
+func (m *Mig{{.Version}}) Apply() error {
+    _, err := m.db.Exec("")
+    return err
+}
+
+func (m *Mig{{.Version}}) Revert() error {
+    _, err := m.db.Exec("")
+    return err
+}
+
+func (m *Mig{{.Version}}) Info() string {
+    return "example description for version {{.Version}}"
+}
+`))
