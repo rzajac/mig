@@ -8,17 +8,15 @@ var migrateCmd = &cobra.Command{
     Use:   "migrate [target]",
     Short: "Migrate target",
     Args:  checkTarget,
-    Run: func(cmd *cobra.Command, args []string) {
-        m, err := NewMigFromConfig(fs, cfgFile, args[0])
+    RunE: func(cmd *cobra.Command, args []string) error {
+        trg, err := getTarget(args[0])
         if err != nil {
-            printErr(err)
-            return
+            return err
         }
-        if err := m.Migrate(0); err != nil {
-            printErr(err)
-            return
+        if err := trg.Migrate(0); err != nil {
+            return err
         }
-        return
+        return nil
     },
 }
 

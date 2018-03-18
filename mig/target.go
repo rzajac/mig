@@ -3,6 +3,7 @@ package mig
 import (
     "fmt"
     "path"
+    "time"
 
     "github.com/pkg/errors"
     "github.com/spf13/afero"
@@ -13,18 +14,19 @@ type target struct {
     name string      // Target name.
     dir  string      // Absolute path to migrations directory.
     drv  Driver      // The database driver.
-    fs   afero.Fs    // Filesystem abstraction.
     migs []Migration // Migrations.
 }
 
 // NewTarget returns new validated target instance.
-func NewTarget(fs afero.Fs, dir string, drv Driver, migs []Migration) (*target, error) {
+func NewTarget(dir string, drv Driver, migs []Migration) (*target, error) {
     target := &target{
         name: path.Base(dir),
         dir:  dir,
         drv:  drv,
-        fs:   fs,
         migs: migs,
+    }
+    if err := drv.Merge(migs); err != nil {
+        return nil, err
     }
     if err := target.validate(); err != nil {
         return nil, err
@@ -40,19 +42,20 @@ func (t *target) TargetDir() string {
     return t.dir
 }
 
-func (t *target) CreateMigration(version int64) error {
-    if err := checkCreateDir(t.fs, t.dir); err != nil {
+func (t *target) CreateMigration() error {
+    if err := checkCreateDir(t.dir); err != nil {
         return err
     }
+    version := time.Now().UnixNano()
     buf, err := t.drv.GenMigration(version)
     if err != nil {
         return err
     }
     migFile := path.Join(t.dir, fmt.Sprintf("%d.go", version))
-    if err := afero.WriteFile(t.fs, migFile, buf, 0666); err != nil {
+    if err := afero.WriteFile(fs, migFile, buf, 0666); err != nil {
         return errors.WithStack(err)
     }
-    if err := createMain(t.fs, path.Dir(t.dir), t.name); err != nil {
+    if err := createMain(path.Dir(t.dir), t.name); err != nil {
         return err
     }
     return nil
@@ -62,8 +65,16 @@ func (t *target) Initialize() error {
     return t.drv.Initialize()
 }
 
-func (t *target) Migrate() error {
+func (t *target) Migrate(toVersion int64) error {
     return nil
+}
+
+func (t *target) Status() []Status {
+    stats := make([]Status, 0)
+    for _, m := range t.migs {
+        stats = append(stats, m)
+    }
+    return stats
 }
 
 // validate validates migrations for target.

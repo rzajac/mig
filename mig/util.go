@@ -10,7 +10,7 @@ import (
 )
 
 // checkCreateDir creates directory if doesn't exist.
-func checkCreateDir(fs afero.Fs, path string) error {
+func checkCreateDir(path string) error {
     ok, err := afero.DirExists(fs, path)
     if err != nil {
         return err
@@ -24,7 +24,7 @@ func checkCreateDir(fs afero.Fs, path string) error {
 }
 
 // createMain creates main.go.
-func createMain(fs afero.Fs, dir string, names ...string) error {
+func createMain(dir string, names ...string) error {
     var data = struct {
         Names []string
     }{}

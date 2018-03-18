@@ -9,12 +9,13 @@ import (
 
 func TestNewMig(t *testing.T) {
     // --- Given ---
-    fs := afero.NewMemMapFs()
+    mem := afero.NewMemMapFs()
+    fs = &afero.Afero{Fs: mem}
     fs.MkdirAll("a/b", 0755)
     afero.WriteFile(fs, "a/b/mig.yaml", []byte(tstYAML), 0644)
 
     // --- When ---
-    cfg, err := NewMig(&afero.Afero{Fs: fs}, "a/b/mig.yaml")
+    cfg, err := NewMig("a/b/mig.yaml")
 
     // --- Then ---
     assert.NoError(t, err)

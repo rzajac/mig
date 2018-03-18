@@ -1,6 +1,7 @@
 package cmd
 
 import (
+    "github.com/rzajac/mig/mig"
     "github.com/spf13/cobra"
 )
 
@@ -9,11 +10,11 @@ var initCmd = &cobra.Command{
     Short: "Initialize target database",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
-        m, err := NewMigFromConfig(fs, cfgFile, args[0])
+        trg, err := getTarget(args[0])
         if err != nil {
             return err
         }
-        if err := m.Initialize(); err != nil {
+        if err := trg.Initialize(); err != nil {
             return err
         }
         return nil

@@ -11,9 +11,11 @@ import (
 // List of known database dialects.
 const DialectMySQL = "mysql"
 
+// File system abstraction.
+var fs = &afero.Afero{afero.NewOsFs()}
+
 // mig represents YAML configuration file.
 type mig struct {
-    fs  afero.Fs
     Dir string `yaml:"dir"` // Absolute migrations path.
     Targets map[string]*struct {
         Dialect string `yaml:"dialect"` // Database dialect.
@@ -22,18 +24,19 @@ type mig struct {
 }
 
 // NewMig loads YAML configuration.
-func NewMig(fs afero.Fs, configPath string) (*mig, error) {
+func NewMig(configPath string) (*mig, error) {
     content, err := afero.ReadFile(fs, configPath)
     if err != nil {
         return nil, errors.WithStack(err)
     }
 
-    cfg := &mig{fs: fs}
+    cfg := &mig{}
     if err = yaml.UnmarshalStrict(content, cfg); err != nil {
         return nil, errors.WithStack(err)
     }
-    // In config file have only directory name.
-    // Here we set it as absolute path.
+    // In config file we only have directory name.
+    // This builds absolute path to migrations directory
+    // based on configuration file path.
     cfg.Dir = path.Join(path.Dir(configPath), cfg.Dir)
     return cfg, nil
 }
@@ -55,5 +58,5 @@ func (c *mig) Target(trgName string) (Target, error) {
     default:
         return nil, errors.Errorf("unknown dialect: %s", trgCfg.Dialect)
     }
-    return NewTarget(c.fs, path.Join(c.Dir, trgName), drv, GetMigrations(trgName))
+    return NewTarget(path.Join(c.Dir, trgName), drv, GetMigrations(trgName))
 }

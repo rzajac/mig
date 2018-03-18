@@ -9,15 +9,12 @@ import (
     "github.com/pkg/errors"
     "github.com/rzajac/mig/mig"
     "github.com/rzajac/mig/version"
-    "github.com/spf13/afero"
     "github.com/spf13/cobra"
     "github.com/spf13/viper"
 )
 
 // cfgFile holds the path to configuration file.
 var cfgFile string
-// File system abstraction.
-var fs = &afero.Afero{afero.NewOsFs()}
 
 func init() {
     cobra.OnInitialize(loadConfig)
@@ -43,13 +40,17 @@ func Execute() {
     }
 }
 
-// NewMigFromConfig instantiates new Mig based on provided config path.
-func NewMigFromConfig(fs afero.Fs, path, target string) (*mig.Mig, error) {
-    cfg, err := mig.NewMig(fs, path)
+// getTarget returns migration target by name.
+func getTarget(name string) (mig.Target, error) {
+    m, err := mig.NewMig(cfgFile)
     if err != nil {
         return nil, err
     }
-    return mig.NewMig(fs, cfg, target)
+    trg, err := m.Target(name)
+    if err != nil {
+        return nil, err
+    }
+    return trg, nil
 }
 
 // loadConfig reads in config file.
