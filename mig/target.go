@@ -25,12 +25,6 @@ func NewTarget(dir string, drv Driver, migs []Migration) (*target, error) {
         drv:  drv,
         migs: migs,
     }
-    if err := drv.Merge(migs); err != nil {
-        return nil, err
-    }
-    if err := target.validate(); err != nil {
-        return nil, err
-    }
     return target, nil
 }
 
@@ -62,19 +56,43 @@ func (t *target) CreateMigration() error {
 }
 
 func (t *target) Initialize() error {
+    if err := t.useDB(); err != nil {
+        return err
+    }
     return t.drv.Initialize()
 }
 
 func (t *target) Migrate(toVersion int64) error {
+    if err := t.useDB(); err != nil {
+        return err
+    }
     return nil
 }
 
-func (t *target) Status() []Status {
+func (t *target) Status() ([]Status, error) {
     stats := make([]Status, 0)
+    if err := t.useDB(); err != nil {
+        return nil, err
+    }
     for _, m := range t.migs {
         stats = append(stats, m)
     }
-    return stats
+    return stats, nil
+}
+
+// useDB opens database connection, merges migration data from database and
+// filesystem and validates migrations.
+func (t *target) useDB() error {
+    if err := t.drv.Open(); err != nil {
+        return nil
+    }
+    if err := t.drv.Merge(t.migs); err != nil {
+        return err
+    }
+    if err := t.validate(); err != nil {
+        return err
+    }
+    return nil
 }
 
 // validate validates migrations for target.

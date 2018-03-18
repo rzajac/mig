@@ -8,6 +8,9 @@ import (
 var ErrNotInitialized = errors.New("database not initialized")
 var ErrUnknownTarget = errors.New("unknown target")
 
+// DriverMaker returns instance of Driver.
+type DriverMaker func(name, dsn string) Driver
+
 // The Target interface is implemented by target configuration providers.
 type Target interface {
     // Name returns target name.
@@ -22,7 +25,7 @@ type Target interface {
     // Initialize prepares underlying database for migrations.
     Initialize() error
     // Returns migration status for the target.
-    Status() []Status
+    Status() ([]Status, error)
 }
 
 // Driver represents database driver.

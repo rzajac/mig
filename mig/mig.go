@@ -50,13 +50,10 @@ func (c *mig) Target(trgName string) (Target, error) {
     if !ok {
         return nil, ErrUnknownTarget
     }
-
-    var drv Driver
-    switch trgCfg.Dialect {
-    case DialectMySQL:
-        drv = newMYSQLDriver(trgName, trgCfg.Dsn)
-    default:
-        return nil, errors.Errorf("unknown dialect: %s", trgCfg.Dialect)
+    constructor, err := GetDriver(trgCfg.Dialect)
+    if err != nil {
+        return nil, err
     }
+    drv := constructor(trgName, trgCfg.Dsn)
     return NewTarget(path.Join(c.Dir, trgName), drv, GetMigrations(trgName))
 }

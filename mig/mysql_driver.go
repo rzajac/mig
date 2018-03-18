@@ -10,15 +10,19 @@ import (
     "github.com/pkg/errors"
 )
 
+func init() {
+    RegisterDriver("mysql", newMYSQLDriver)
+}
+
 // mysqlDriver represents MySQL migration driver.
 type mysqlDriver struct {
-    name string
-    dsn  string
-    db   *sql.DB
+    name       string
+    dsn        string
+    db         *sql.DB
 }
 
 // newMYSQLDriver returns new instance of mysqlDriver.
-func newMYSQLDriver(name, dsn string) *mysqlDriver {
+func newMYSQLDriver(name, dsn string) Driver {
     return &mysqlDriver{name: name, dsn: dsn}
 }
 
