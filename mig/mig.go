@@ -1,37 +1,59 @@
 package mig
 
-import "sort"
+import (
+    "path"
 
-// Registered migrations.
-var migrations = make(map[string][]Migration)
+    "github.com/pkg/errors"
+    "github.com/spf13/afero"
+    "gopkg.in/yaml.v2"
+)
 
-// Register registers Migration.
-func Register(target string, migration Migration) {
-    migrations[target] = append(migrations[target], migration)
+// List of known database dialects.
+const DialectMySQL = "mysql"
+
+// mig represents YAML configuration file.
+type mig struct {
+    fs  afero.Fs
+    Dir string `yaml:"dir"` // Absolute migrations path.
+    Targets map[string]*struct {
+        Dialect string `yaml:"dialect"` // Database dialect.
+        Dsn     string `yaml:"dsn"`     // Database connection string.
+    } `yaml:"targets"`      // List of defined targets.
 }
 
-// TargetNames returns registered target names.
-func TargetNames() []string {
-    names := make([]string, 0)
-    for name := range migrations {
-        names = append(names, name)
+// NewMig loads YAML configuration.
+func NewMig(fs afero.Fs, configPath string) (*mig, error) {
+    content, err := afero.ReadFile(fs, configPath)
+    if err != nil {
+        return nil, errors.WithStack(err)
     }
-    return names
+
+    cfg := &mig{fs: fs}
+    if err = yaml.UnmarshalStrict(content, cfg); err != nil {
+        return nil, errors.WithStack(err)
+    }
+    // In config file have only directory name.
+    // Here we set it as absolute path.
+    cfg.Dir = path.Join(path.Dir(configPath), cfg.Dir)
+    return cfg, nil
 }
 
-// GetMigrations returns sorted migrations for given target.
-func GetMigrations(target string) []Migration {
-    migs, ok := migrations[target]
+func (c *mig) MigDir() string {
+    return c.Dir
+}
+
+func (c *mig) Target(trgName string) (Target, error) {
+    trgCfg, ok := c.Targets[trgName]
     if !ok {
-        return make([]Migration, 0)
+        return nil, ErrUnknownTarget
     }
-    sort.Sort(migSort(migs))
-    return migs
+
+    var drv Driver
+    switch trgCfg.Dialect {
+    case DialectMySQL:
+        drv = newMYSQLDriver(trgName, trgCfg.Dsn)
+    default:
+        return nil, errors.Errorf("unknown dialect: %s", trgCfg.Dialect)
+    }
+    return NewTarget(c.fs, path.Join(c.Dir, trgName), drv, GetMigrations(trgName))
 }
-
-// Slice of Migrators with Sorter interface.
-type migSort []Migration
-
-func (m migSort) Len() int           { return len(m) }
-func (m migSort) Less(i, j int) bool { return m[i].Version() < m[j].Version() }
-func (m migSort) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }

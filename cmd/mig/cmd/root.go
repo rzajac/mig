@@ -45,7 +45,7 @@ func Execute() {
 
 // NewMigFromConfig instantiates new Mig based on provided config path.
 func NewMigFromConfig(fs afero.Fs, path, target string) (*mig.Mig, error) {
-    cfg, err := mig.NewConfig(fs, path)
+    cfg, err := mig.NewMig(fs, path)
     if err != nil {
         return nil, err
     }

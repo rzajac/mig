@@ -66,9 +66,8 @@ func (t *target) Migrate() error {
     return nil
 }
 
-// validate validates migrations list for target.
+// validate validates migrations for target.
 func (t *target) validate() error {
-    // No migrations no possibility for error.
     if len(t.migs) == 0 {
         return nil
     }
