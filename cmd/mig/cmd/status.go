@@ -1,8 +1,10 @@
 package cmd
 
 import (
-    "fmt"
+    "os"
+    "strconv"
 
+    "github.com/olekukonko/tablewriter"
     "github.com/spf13/cobra"
 )
 
@@ -15,14 +17,28 @@ var statusCmd = &cobra.Command{
         if err != nil {
             return err
         }
-        for _, st := range trg.Status() {
-            msg := "Version: %d, applied: %s\n"
+
+        status, err := trg.Status()
+        if err != nil {
+            return err
+        }
+
+        data := make([][]string, 0)
+        for _, st := range status {
             applied := st.AppliedAt().String()
             if st.AppliedAt().IsZero() {
                 applied = "No"
             }
-            fmt.Printf(msg, st.Version(), applied)
+            row := []string{strconv.FormatInt(st.Version(), 10), st.Info(), applied}
+            data = append(data, row)
         }
+
+        table := tablewriter.NewWriter(os.Stdout)
+        table.SetHeader([]string{"Version", "Description", "Applied"})
+        table.SetBorder(true)
+        table.AppendBulk(data)
+        table.Render()
+
         return nil
     },
 }

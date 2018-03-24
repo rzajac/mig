@@ -5,7 +5,7 @@ import (
 )
 
 var migrateCmd = &cobra.Command{
-    Use:   "migrate [target]",
+    Use:   "migrate [target] [version]",
     Short: "Migrate target",
     Args:  checkTarget,
     RunE: func(cmd *cobra.Command, args []string) error {
@@ -13,7 +13,11 @@ var migrateCmd = &cobra.Command{
         if err != nil {
             return err
         }
-        if err := trg.Migrate(0); err != nil {
+        version, err := getArgsVersion(args, 1, 0)
+        if err != nil {
+            return err
+        }
+        if err := trg.Migrate(version); err != nil {
             return err
         }
         return nil

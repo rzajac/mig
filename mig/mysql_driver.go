@@ -52,11 +52,24 @@ func (m *mysqlDriver) Version() (int64, error) {
     return v, err
 }
 
-func (m *mysqlDriver) Apply(migration Migration) error {
+func (m *mysqlDriver) Apply(mgr Migration) error {
+    if err := mgr.Apply(); err != nil {
+        return err
+    }
+    added := time.Now().UTC()
+    if err := m.addVersion(mgr.Version(), added); err != nil {
+        return err
+    }
     return nil
 }
 
-func (m *mysqlDriver) Revert(migration Migration) error {
+func (m *mysqlDriver) Revert(mgr Migration) error {
+    if err := mgr.Revert(); err != nil {
+        return err
+    }
+    if err := m.removeVersion(mgr.Version()); err != nil {
+        return err
+    }
     return nil
 }
 
@@ -120,6 +133,16 @@ func (m *mysqlDriver) GenMigration(version int64) ([]byte, error) {
     return buf.Bytes(), nil
 }
 
+func (m *mysqlDriver) addVersion(version int64, t time.Time) error {
+    _, err := m.db.Exec(mySQLAddVersion, version, t)
+    return err
+}
+
+func (m *mysqlDriver) removeVersion(version int64) error {
+    _, err := m.db.Exec(mySQLRemoveVersion, version)
+    return err
+}
+
 // Create migrations table.
 var mySQLMigTableCreate = `CREATE TABLE migrations (
   version BIGINT UNSIGNED NOT NULL,
@@ -131,6 +154,8 @@ var mySQLMigTableCreate = `CREATE TABLE migrations (
 var mySQLGetApplied = `SELECT version, applied FROM migrations ORDER BY version ASC`
 // Select most recent migration version.
 var mySQLGetVersion = `SELECT version FROM migrations ORDER BY version DESC LIMIT 1`
+var mySQLAddVersion = `INSERT migrations (version, applied) VALUES (?, ?)`
+var mySQLRemoveVersion = `DELETE FROM migrations WHERE version = ?`
 
 // MySQL migration file template.
 var mySQLMigTpl = template.Must(template.New("mysql-mig-tpl").Parse(`package {{.Pkg}}

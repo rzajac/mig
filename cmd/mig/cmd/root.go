@@ -5,6 +5,7 @@ import (
     "fmt"
     "log"
     "os"
+    "strconv"
 
     "github.com/pkg/errors"
     "github.com/rzajac/mig/mig"
@@ -95,8 +96,15 @@ func printErr(err error) {
 
 // checkTarget checks if the first parameter is a target name.
 func checkTarget(_ *cobra.Command, args []string) error {
-    if len(args) != 1 {
+    if len(args) < 1 {
         return errors.New("requires target name argument")
     }
     return nil
+}
+
+func getArgsVersion(args []string, idx int, def int64) (int64, error) {
+    if len(args)-1 < idx {
+        return def, nil
+    }
+    return strconv.ParseInt(args[idx], 10, 64)
 }

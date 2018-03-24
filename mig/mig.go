@@ -8,9 +8,6 @@ import (
     "gopkg.in/yaml.v2"
 )
 
-// List of known database dialects.
-const DialectMySQL = "mysql"
-
 // File system abstraction.
 var fs = &afero.Afero{afero.NewOsFs()}
 
@@ -41,12 +38,12 @@ func NewMig(configPath string) (*mig, error) {
     return cfg, nil
 }
 
-func (c *mig) MigDir() string {
-    return c.Dir
+func (m *mig) MigDir() string {
+    return m.Dir
 }
 
-func (c *mig) Target(trgName string) (Target, error) {
-    trgCfg, ok := c.Targets[trgName]
+func (m *mig) Target(trgName string) (Target, error) {
+    trgCfg, ok := m.Targets[trgName]
     if !ok {
         return nil, ErrUnknownTarget
     }
@@ -55,5 +52,14 @@ func (c *mig) Target(trgName string) (Target, error) {
         return nil, err
     }
     drv := constructor(trgName, trgCfg.Dsn)
-    return NewTarget(path.Join(c.Dir, trgName), drv, GetMigrations(trgName))
+    return NewTarget(path.Join(m.Dir, trgName), drv, GetMigrations(trgName))
+}
+
+// Names returns all defined target names.
+func (m *mig) Names() []string {
+    var names []string
+    for name := range m.Targets {
+        names = append(names, name)
+    }
+    return names
 }

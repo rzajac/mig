@@ -3,6 +3,7 @@ package mig
 import (
     "fmt"
     "path"
+    "sort"
     "time"
 
     "github.com/pkg/errors"
@@ -56,7 +57,7 @@ func (t *target) CreateMigration() error {
 }
 
 func (t *target) Initialize() error {
-    if err := t.useDB(); err != nil {
+    if err := t.useDB(); err != nil && err != ErrNotInitialized {
         return err
     }
     return t.drv.Initialize()
@@ -65,6 +66,40 @@ func (t *target) Initialize() error {
 func (t *target) Migrate(toVersion int64) error {
     if err := t.useDB(); err != nil {
         return err
+    }
+    if toVersion >= 0 {
+        return t.apply(toVersion)
+    }
+    return t.revert(toVersion)
+}
+
+func (t *target) apply(toVersion int64) error {
+    for _, m := range t.migs {
+        if !m.AppliedAt().IsZero() {
+            continue
+        }
+        if err := t.drv.Apply(m); err != nil {
+            return err
+        }
+        if m.Version() == toVersion {
+            break
+        }
+    }
+    return nil
+}
+
+func (t *target) revert(toVersion int64) error {
+    sort.Reverse(migSort(t.migs))
+    for _, m := range t.migs {
+        if m.AppliedAt().IsZero() {
+            continue
+        }
+        if err := t.drv.Revert(m); err != nil {
+            return err
+        }
+        if m.Version() == toVersion {
+            break
+        }
     }
     return nil
 }

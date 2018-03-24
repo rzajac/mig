@@ -13,10 +13,7 @@ var initCmd = &cobra.Command{
         if err != nil {
             return err
         }
-        if err := trg.Initialize(); err != nil {
-            return err
-        }
-        return nil
+        return trg.Initialize()
     },
 }
 
