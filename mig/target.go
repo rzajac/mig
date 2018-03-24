@@ -84,7 +84,7 @@ func (t *target) Status() ([]Status, error) {
 // filesystem and validates migrations.
 func (t *target) useDB() error {
     if err := t.drv.Open(); err != nil {
-        return nil
+        return err
     }
     if err := t.drv.Merge(t.migs); err != nil {
         return err

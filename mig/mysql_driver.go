@@ -16,9 +16,9 @@ func init() {
 
 // mysqlDriver represents MySQL migration driver.
 type mysqlDriver struct {
-    name       string
-    dsn        string
-    db         *sql.DB
+    name string
+    dsn  string
+    db   *sql.DB
 }
 
 // newMYSQLDriver returns new instance of mysqlDriver.
