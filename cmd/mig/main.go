@@ -1,9 +1,7 @@
 package main
 
 import (
-    "github.com/rzajac/mig/cmd/mig/cmd"
+	"github.com/rzajac/mig/cmd/mig/cmd"
 )
 
-func main() {
-    cmd.Execute()
-}
+func main() { cmd.Execute() }
